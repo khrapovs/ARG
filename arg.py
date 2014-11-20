@@ -29,10 +29,33 @@ __email__ = "khrapovs@gmail.com"
 __status__ = "Development"
 
 
-class ARG(object):
+class ARGparams(object):
+    """Class for ARG model parameters.
 
-    def __init__(self):
-        pass
+    Attributes
+    ----------
+    scale : float
+    rho : float
+    delta : float
+
+    """
+    def __init__(self, scale=.01, rho=.9, delta=1.1):
+        self.scale = scale
+        self.rho = rho
+        self.delta = delta
+
+
+class ARG(object):
+    """Class for ARG model.
+
+    Attributes
+    ----------
+    param : ARGparams instance
+        Parameters of the model
+
+    """
+    def __init__(self, param):
+        self.param = param
 
 
 if __name__ == '__main__':
