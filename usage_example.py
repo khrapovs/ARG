@@ -14,5 +14,7 @@ def play_with_arg():
     uarg = np.linspace(-50, 100, 100)
     argmodel.plot_abc(uarg)
 
+    argmodel.plot_vsim()
+
 if __name__ == '__main__':
     play_with_arg()

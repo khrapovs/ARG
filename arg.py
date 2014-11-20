@@ -25,6 +25,7 @@ from __future__ import print_function, division
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import scipy.stats as st
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -41,13 +42,14 @@ class ARGparams(object):
     delta : float
 
     """
-    def __init__(self, scale=.01, rho=.9, delta=1.1):
+    def __init__(self, scale=.001, rho=.9, delta=1.1):
         """Initialize the class instance.
 
         """
         self.scale = scale
         self.rho = rho
         self.delta = delta
+        self.beta = self.rho / self.scale
 
     def __repr__(self):
         """This is what is shown when you interactively explore the instance.
@@ -62,16 +64,6 @@ class ARGparams(object):
 
         """
         return self.__repr__()
-
-    def beta(self):
-        """Compute beta parameter of the model.
-
-        Returns
-        -------
-        beta : float
-
-        """
-        return self.rho / self.scale
 
 
 class ARG(object):
@@ -159,6 +151,9 @@ class ARG(object):
     def umean(self):
         """Unconditional mean of the process.
 
+        .. math::
+            E\left[Y_{t}\right]=\frac{c\delta}{1-\rho}
+
         Returns
         -------
         umean : float
@@ -169,22 +164,28 @@ class ARG(object):
     def uvar(self):
         """Unconditional variance of the process.
 
+        .. math::
+            V\left[Y_{t}\right]=\frac{c^{2}\delta}{\left(1-\rho\right)^{2}}
+
         Returns
         -------
         uvar : float
 
         """
-        return self.unconditional_mean() / self.param.delta
+        return self.umean() / self.param.delta
 
     def ustd(self):
         """Unconditional variance of the process.
+
+        .. math::
+            \sqrt{V\left[Y_{t}\right]}
 
         Returns
         -------
         ustd : float
 
         """
-        return self.unconditional_var() ** .5
+        return self.uvar() ** .5
 
     def plot_abc(self, uarg):
         """Plot a() and b() functions on the same plot.
@@ -214,6 +215,68 @@ class ARG(object):
         plt.xlabel('$u$')
 
         plt.tight_layout()
+        plt.show()
+
+    def vsim(self, nsim=1, nobs=int(1e2), param=ARGparams()):
+        """Simulate ARG(1) process.
+
+        Parameters
+        ----------
+        nsim : int
+            Number of series to simulate
+        nobs : int
+            Number of observations to simulate
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        (nsim, nobs) array
+            Simulated data
+
+        """
+        vol = np.empty((nsim, nobs))
+        vol[:, 0] = self.umean()
+        for i in range(1, nobs):
+            temp = np.random.poisson(self.param.beta * vol[:, i-1])
+            vol[:, i] = self.param.scale \
+                * np.random.gamma(self.param.delta + temp)
+        return vol
+
+    def vsim2(self, nsim=1, nobs=int(1e2), param=ARGparams()):
+        """Simulate ARG(1) process.
+
+        Parameters
+        ----------
+        nsim : int
+            Number of series to simulate
+        nobs : int
+            Number of observations to simulate
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        (nsim, nobs) array
+            Simulated data
+
+        """
+        vol = np.empty((nsim, nobs))
+        vol[:, 0] = self.umean()
+        for i in range(1, nobs):
+            df = self.param.delta * 2
+            nc = self.param.scale * self.param.beta * vol[:, i-1]
+            vol[:, i] = st.ncx2.rvs(df, nc, size=nsim)
+        return vol
+
+    def plot_vsim(self):
+        """Plot simulated ARG(1) process."""
+
+        vol = self.vsim(nsim=2)
+        x = np.arange(vol.shape[1])
+        plt.figure(figsize=(8, 4))
+        for voli in vol:
+            plt.plot(x, voli)
         plt.show()
 
 

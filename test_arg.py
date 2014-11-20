@@ -18,7 +18,20 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(param.scale, float)
         self.assertIsInstance(param.rho, float)
         self.assertIsInstance(param.delta, float)
-        self.assertIsInstance(param.beta(), float)
+        self.assertIsInstance(param.beta, float)
+
+    def test_uncond_moments(self):
+        """Test unconditional moments of the ARG model."""
+
+        argmodel = arg.ARG()
+
+        self.assertIsInstance(argmodel.umean(), float)
+        self.assertIsInstance(argmodel.uvar(), float)
+        self.assertIsInstance(argmodel.ustd(), float)
+
+        # TODO : test using symbolic library
+        # that these moments coincide with derivatives of a, b, c
+
 
     def test_abc_functions(self):
         """Test functions a, b, c of ARG model."""
