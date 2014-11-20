@@ -21,7 +21,7 @@ install:
 
 # Run test
 script:
-  - python arg_test.py
+  - nosetests
 
 # Calculate coverage
 after_success:

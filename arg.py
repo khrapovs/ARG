@@ -23,6 +23,8 @@ References
 from __future__ import print_function, division
 
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 import scipy.stats as st
 
 __author__ = "Stanislav Khrapov"
@@ -189,9 +191,6 @@ class ARG(object):
         """Plot a() and b() functions on the same plot.
 
         """
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-
         plt.figure(figsize=(8, 4))
 
         plt.subplot(1, 3, 1)
@@ -296,9 +295,6 @@ class ARG(object):
     def plot_vsim(self):
         """Plot simulated ARG process."""
 
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-
         np.random.seed(seed=1)
         vol = self.vsim2(nsim=2)
         plt.figure(figsize=(8, 4))
@@ -308,9 +304,6 @@ class ARG(object):
 
     def plot_vlast_density(self, nsim=100, nobs=100):
         """Plot the marginal density of ARG process."""
-
-        import matplotlib.pyplot as plt
-        import seaborn as sns
 
         sns.set_palette("hls", 1)
         plt.figure(figsize=(8, 4))
