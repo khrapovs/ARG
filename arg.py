@@ -188,5 +188,5 @@ class ARG(object):
 
 
 if __name__ == '__main__':
-    from ARG.usage_example import test_arg
-    test_arg()
+    from ARG.usage_example import play_with_arg
+    play_with_arg()

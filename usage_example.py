@@ -6,7 +6,7 @@ import numpy as np
 
 import ARG.arg as arg
 
-def test_arg():
+def play_with_arg():
     param = arg.ARGparams()
     print(param)
 
@@ -15,4 +15,4 @@ def test_arg():
     argmodel.plot_abc(uarg)
 
 if __name__ == '__main__':
-    test_arg()
+    play_with_arg()

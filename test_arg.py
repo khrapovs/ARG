@@ -14,6 +14,7 @@ class ARGTestCase(ut.TestCase):
         """Test parameter class."""
 
         param = arg.ARGparams()
+
         self.assertIsInstance(param.scale, float)
         self.assertIsInstance(param.rho, float)
         self.assertIsInstance(param.delta, float)
@@ -24,9 +25,14 @@ class ARGTestCase(ut.TestCase):
 
         argmodel = arg.ARG()
         uarg = np.linspace(-50, 100, 100)
+
         self.assertIsInstance(argmodel.afun(uarg), np.ndarray)
         self.assertIsInstance(argmodel.bfun(uarg), np.ndarray)
         self.assertIsInstance(argmodel.cfun(uarg), np.ndarray)
+
+        self.assertEqual(uarg.shape, argmodel.afun(uarg).shape)
+        self.assertEqual(uarg.shape, argmodel.bfun(uarg).shape)
+        self.assertEqual(uarg.shape, argmodel.cfun(uarg).shape)
 
 
 if __name__ == '__main__':
