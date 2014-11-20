@@ -18,7 +18,6 @@ before_install:
 # Install packages
 install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib nose
-  - python setup.py install
 
 # Run test
 script:
