@@ -61,6 +61,16 @@ class ARGparams(object):
         """
         return self.__repr__()
 
+    def beta(self):
+        """Compute beta parameter of the model.
+
+        Returns
+        -------
+        beta : float
+
+        """
+        return self.rho / self.scale
+
 
 class ARG(object):
     """Class for ARG model.
@@ -71,8 +81,50 @@ class ARG(object):
         Parameters of the model
 
     """
-    def __init__(self, param):
+    def __init__(self, param=ARGparams()):
+        """INitialize class instance.
+
+        """
         self.param = param
+
+    def afun(self, uarg):
+        """Function a().
+
+        .. math::
+            a\left(u\right)=\frac{\rho u}{1+cu}
+
+        Parameters
+        ----------
+        uarg : array
+
+        Returns
+        -------
+        a(u) : array
+
+        """
+        return self.param.rho * uarg / (1 + self.param.scale * uarg)
+
+    def bfun(self, uarg):
+        """Function b().
+
+        .. math::
+            b\left(u\right)=\delta\log\left(1+cu\right)
+
+        Parameters
+        ----------
+        uarg : array
+
+        Returns
+        -------
+        b(u) : array
+
+        """
+        return self.param.delta * np.log(1 + self.param.scale * uarg)
+
+    def plot_abfun(self, uarg):
+        """Plot a() and b() functions on the same plot.
+        """
+        pass
 
 
 if __name__ == '__main__':
