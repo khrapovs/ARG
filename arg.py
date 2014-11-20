@@ -265,14 +265,15 @@ class ARG(object):
         vol[:, 0] = self.umean()
         for i in range(1, nobs):
             df = self.param.delta * 2
-            nc = self.param.scale * self.param.beta * vol[:, i-1]
+            nc = self.param.rho * vol[:, i-1]
             vol[:, i] = st.ncx2.rvs(df, nc, size=nsim)
-        return vol
+        return vol * self.param.scale / 2
 
     def plot_vsim(self):
         """Plot simulated ARG(1) process."""
 
-        vol = self.vsim(nsim=2)
+        np.random.seed(seed=1)
+        vol = self.vsim2(nsim=2)
         x = np.arange(vol.shape[1])
         plt.figure(figsize=(8, 4))
         for voli in vol:
