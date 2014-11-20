@@ -6,6 +6,11 @@ import numpy as np
 
 import ARG.arg as arg
 
+__author__ = "Stanislav Khrapov"
+__email__ = "khrapovs@gmail.com"
+__status__ = "Development"
+
+
 def play_with_arg():
     param = arg.ARGparams()
     print(param)

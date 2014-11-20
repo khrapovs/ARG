@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""Testing suite for ARG class.
+
+"""
 from __future__ import print_function, division
 
 import unittest as ut
 import numpy as np
 
 import ARG.arg as arg
+
+__author__ = "Stanislav Khrapov"
+__email__ = "khrapovs@gmail.com"
+__status__ = "Development"
 
 
 class ARGTestCase(ut.TestCase):
