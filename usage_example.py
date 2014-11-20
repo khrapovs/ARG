@@ -4,7 +4,7 @@ from __future__ import print_function, division
 
 import numpy as np
 
-import ARG.arg as arg
+from ARG import ARG, ARGparams
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -12,10 +12,10 @@ __status__ = "Development"
 
 
 def play_with_arg():
-    param = arg.ARGparams()
+    param = ARGparams()
     print(param)
 
-    argmodel = arg.ARG()
+    argmodel = ARG()
     uarg = np.linspace(-50, 100, 100)
     argmodel.plot_abc(uarg)
 
