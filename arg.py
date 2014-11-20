@@ -156,6 +156,36 @@ class ARG(object):
         return self.param.delta \
             * np.log(1 + self.param.scale * uarg / (1-self.param.rho))
 
+    def umean(self):
+        """Unconditional mean of the process.
+
+        Returns
+        -------
+        umean : float
+
+        """
+        return self.param.scale * self.param.delta / (1 - self.param.rho)
+
+    def uvar(self):
+        """Unconditional variance of the process.
+
+        Returns
+        -------
+        uvar : float
+
+        """
+        return self.unconditional_mean() / self.param.delta
+
+    def ustd(self):
+        """Unconditional variance of the process.
+
+        Returns
+        -------
+        ustd : float
+
+        """
+        return self.unconditional_var() ** .5
+
     def plot_abc(self, uarg):
         """Plot a() and b() functions on the same plot.
 
