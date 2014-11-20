@@ -66,11 +66,15 @@ class ARGTestCase(ut.TestCase):
         shape = (nsim, nobs)
         self.assertEqual(argmodel.vsim(nsim=nsim, nobs=nobs).shape, shape)
         self.assertEqual(argmodel.vsim2(nsim=nsim, nobs=nobs).shape, shape)
+        self.assertEqual(argmodel.vsim_last(nsim=nsim, nobs=nobs).shape,
+                         (nsim, ))
 
         nsim, nobs = 2, 2
         shape = (nsim, nobs)
         self.assertEqual(argmodel.vsim(nsim=nsim, nobs=nobs).shape, shape)
         self.assertEqual(argmodel.vsim2(nsim=nsim, nobs=nobs).shape, shape)
+        self.assertEqual(argmodel.vsim_last(nsim=nsim, nobs=nobs).shape,
+                         (nsim, ))
 
 
 if __name__ == '__main__':

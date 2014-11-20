@@ -21,5 +21,10 @@ def play_with_arg():
 
     argmodel.plot_vsim()
 
+    vol = argmodel.vsim_last(nsim=10)
+    print(vol.shape)
+
+    argmodel.plot_vlast_density(nsim=1000)
+
 if __name__ == '__main__':
     play_with_arg()
