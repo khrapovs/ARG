@@ -293,7 +293,7 @@ class ARG(object):
         return self.vsim(**args)[:, -1]
 
     def plot_vsim(self):
-        """Plot simulated ARG(1) process."""
+        """Plot simulated ARG process."""
 
         np.random.seed(seed=1)
         vol = self.vsim2(nsim=2)
