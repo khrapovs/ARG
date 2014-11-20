@@ -27,3 +27,14 @@ import numpy as np
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
 __status__ = "Development"
+
+
+class ARG(object):
+
+    def __init__(self):
+        pass
+
+
+if __name__ == '__main__':
+    from ARG.usage_example import test_arg
+    test_arg()
