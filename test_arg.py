@@ -10,13 +10,23 @@ import ARG.arg as arg
 
 class ARGTestCase(ut.TestCase):
 
-    def test_truisms(self):
-        """Test parameter class"""
+    def test_param_class(self):
+        """Test parameter class."""
+
         param = arg.ARGparams()
-        self.assertTrue(isinstance(param.scale, float))
-        self.assertTrue(isinstance(param.rho, float))
-        self.assertTrue(isinstance(param.delta, float))
-        self.assertTrue(isinstance(param.beta(), float))
+        self.assertIsInstance(param.scale, float)
+        self.assertIsInstance(param.rho, float)
+        self.assertIsInstance(param.delta, float)
+        self.assertIsInstance(param.beta(), float)
+
+    def test_abc_functions(self):
+        """Test functions a, b, c of ARG model."""
+
+        argmodel = arg.ARG()
+        uarg = np.linspace(-50, 100, 100)
+        self.assertIsInstance(argmodel.afun(uarg), np.ndarray)
+        self.assertIsInstance(argmodel.bfun(uarg), np.ndarray)
+        self.assertIsInstance(argmodel.cfun(uarg), np.ndarray)
 
 
 if __name__ == '__main__':
