@@ -20,7 +20,7 @@ class ARGTestCase(ut.TestCase):
     def test_param_class(self):
         """Test parameter class."""
 
-        param = arg.ARGparams()
+        param = ARGparams()
 
         self.assertIsInstance(param.scale, float)
         self.assertIsInstance(param.rho, float)
@@ -30,7 +30,7 @@ class ARGTestCase(ut.TestCase):
     def test_uncond_moments(self):
         """Test unconditional moments of the ARG model."""
 
-        argmodel = arg.ARG()
+        argmodel = ARG()
 
         self.assertIsInstance(argmodel.umean(), float)
         self.assertIsInstance(argmodel.uvar(), float)
@@ -43,7 +43,7 @@ class ARGTestCase(ut.TestCase):
     def test_abc_functions(self):
         """Test functions a, b, c of ARG model."""
 
-        argmodel = arg.ARG()
+        argmodel = ARG()
         uarg = np.linspace(-50, 100, 100)
 
         self.assertIsInstance(argmodel.afun(uarg), np.ndarray)
@@ -57,7 +57,7 @@ class ARGTestCase(ut.TestCase):
     def test_simulations(self):
         """Test simulation of ARG model."""
 
-        argmodel = arg.ARG()
+        argmodel = ARG()
 
         self.assertIsInstance(argmodel.vsim(), np.ndarray)
         self.assertIsInstance(argmodel.vsim2(), np.ndarray)
