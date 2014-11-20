@@ -4,7 +4,11 @@ from __future__ import print_function, division
 
 import numpy as np
 
-from ARG.arg import ARG
+import ARG.arg as arg
 
 def test_arg():
-    pass
+    param = arg.ARGparams()
+    print(param)
+
+if __name__ == '__main__':
+    test_arg()
