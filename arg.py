@@ -123,24 +123,49 @@ class ARG(object):
         """
         return self.param.delta * np.log(1 + self.param.scale * uarg)
 
+    def cfun(self, uarg):
+        """Function c().
+
+        .. math::
+            c\left(u\right)=\delta\log\left\{ 1+\frac{cu}{1-\rho}\right\}
+
+        Parameters
+        ----------
+        uarg : array
+
+        Returns
+        -------
+        c(u) : array
+
+        """
+        return self.param.delta \
+            * np.log(1 + self.param.scale * uarg / (1-self.param.rho))
+
     def plot_abfun(self, uarg):
         """Plot a() and b() functions on the same plot.
 
         """
         plt.figure(figsize=(8, 4))
 
-        plt.subplot(1, 2, 1)
+        plt.subplot(1, 3, 1)
         plt.plot(uarg, self.afun(uarg))
         plt.axhline(0)
         plt.axvline(0)
         plt.ylabel('$a(u)$')
         plt.xlabel('$u$')
 
-        plt.subplot(1, 2, 2)
+        plt.subplot(1, 3, 2)
         plt.plot(uarg, self.bfun(uarg))
         plt.axhline(0)
         plt.axvline(0)
         plt.ylabel('$b(u)$')
+        plt.xlabel('$u$')
+
+        plt.subplot(1, 3, 3)
+        plt.plot(uarg, self.cfun(uarg))
+        plt.axhline(0)
+        plt.axvline(0)
+        plt.ylabel('$c(u)$')
         plt.xlabel('$u$')
 
         plt.tight_layout()
