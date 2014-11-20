@@ -76,6 +76,10 @@ class ARGTestCase(ut.TestCase):
         self.assertEqual(argmodel.vsim_last(nsim=nsim, nobs=nobs).shape,
                          (nsim, ))
 
+        nsim, nobs = int(1e3), int(1e3)
+        self.assertGreater(argmodel.vsim(nsim=nsim, nobs=nobs).all(), 0)
+        self.assertGreater(argmodel.vsim2(nsim=nsim, nobs=nobs).all(), 0)
+
 
 if __name__ == '__main__':
     ut.main()

@@ -308,7 +308,7 @@ class ARG(object):
         sns.set_palette("hls", 1)
         plt.figure(figsize=(8, 4))
         vol = self.vsim_last(nsim=int(nsim), nobs=int(nobs))
-        sns.distplot(vol, rug=True, hist=True)
+        sns.distplot(vol, rug=True, hist=False)
         plt.show()
 
 
