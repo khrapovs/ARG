@@ -23,6 +23,8 @@ References
 from __future__ import print_function, division
 
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -123,8 +125,26 @@ class ARG(object):
 
     def plot_abfun(self, uarg):
         """Plot a() and b() functions on the same plot.
+
         """
-        pass
+        plt.figure(figsize=(8, 4))
+
+        plt.subplot(1, 2, 1)
+        plt.plot(uarg, self.afun(uarg))
+        plt.axhline(0)
+        plt.axvline(0)
+        plt.ylabel('$a(u)$')
+        plt.xlabel('$u$')
+
+        plt.subplot(1, 2, 2)
+        plt.plot(uarg, self.bfun(uarg))
+        plt.axhline(0)
+        plt.axvline(0)
+        plt.ylabel('$b(u)$')
+        plt.xlabel('$u$')
+
+        plt.tight_layout()
+        plt.show()
 
 
 if __name__ == '__main__':

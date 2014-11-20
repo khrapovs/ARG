@@ -11,10 +11,8 @@ def test_arg():
     print(param)
 
     argmodel = arg.ARG()
-    uarg = np.linspace(-1, 1, 10)
-    afun = argmodel.afun(uarg)
-    bfun = argmodel.bfun(uarg)
-    print(afun, bfun)
+    uarg = np.linspace(-50, 100, 100)
+    argmodel.plot_abfun(uarg)
 
 if __name__ == '__main__':
     test_arg()
