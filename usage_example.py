@@ -4,7 +4,7 @@ from __future__ import print_function, division
 
 import numpy as np
 
-import ARGmodel.arg as arg
+import ARG.arg as arg
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"

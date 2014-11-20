@@ -313,5 +313,5 @@ class ARG(object):
 
 
 if __name__ == '__main__':
-    from ARGmodel.usage_example import play_with_arg
+    from usage_example import play_with_arg
     play_with_arg()
