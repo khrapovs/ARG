@@ -47,6 +47,24 @@ class ARGTestCase(ut.TestCase):
         self.assertEqual(uarg.shape, argmodel.bfun(uarg).shape)
         self.assertEqual(uarg.shape, argmodel.cfun(uarg).shape)
 
+    def test_simulations(self):
+        """Test simulation of ARG model."""
+
+        argmodel = arg.ARG()
+
+        self.assertIsInstance(argmodel.vsim(), np.ndarray)
+        self.assertIsInstance(argmodel.vsim2(), np.ndarray)
+
+        nsim, nobs = 1, 1
+        shape = (nsim, nobs)
+        self.assertEqual(argmodel.vsim(nsim=nsim, nobs=nobs).shape, shape)
+        self.assertEqual(argmodel.vsim2(nsim=nsim, nobs=nobs).shape, shape)
+
+        nsim, nobs = 2, 2
+        shape = (nsim, nobs)
+        self.assertEqual(argmodel.vsim(nsim=nsim, nobs=nobs).shape, shape)
+        self.assertEqual(argmodel.vsim2(nsim=nsim, nobs=nobs).shape, shape)
+
 
 if __name__ == '__main__':
     ut.main()

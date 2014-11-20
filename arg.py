@@ -220,6 +220,10 @@ class ARG(object):
     def vsim(self, nsim=1, nobs=int(1e2), param=ARGparams()):
         """Simulate ARG(1) process.
 
+        .. math::
+            Z_{t}|Y_{t-1}\sim\mathcal{P}\left(\beta Y_{t-1}\right)
+            Y_{t}|Z_{t}\sim\gamma\left(\delta+Z_{t},c\right)
+
         Parameters
         ----------
         nsim : int
@@ -274,10 +278,9 @@ class ARG(object):
 
         np.random.seed(seed=1)
         vol = self.vsim2(nsim=2)
-        x = np.arange(vol.shape[1])
         plt.figure(figsize=(8, 4))
         for voli in vol:
-            plt.plot(x, voli)
+            plt.plot(voli)
         plt.show()
 
 
