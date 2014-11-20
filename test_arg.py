@@ -8,7 +8,7 @@ from __future__ import print_function, division
 import unittest as ut
 import numpy as np
 
-from arg import ARGparams, ARG
+from ARG import ARGparams, ARG
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
