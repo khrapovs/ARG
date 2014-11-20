@@ -77,10 +77,25 @@ class ARGparams(object):
 class ARG(object):
     """Class for ARG model.
 
+    .. math::
+        E\left[\left.\exp\left\{ -uY_{t}\right\} \right|Y_{t-1}\right]\\
+            =\exp\left\{ -a(u)Y_{t-1}-b(u)\right\}
+
     Attributes
     ----------
     param : ARGparams instance
         Parameters of the model
+
+    Methods
+    -------
+    afun(uarg)
+        a(u) function
+    bfun(uarg)
+        b(u) function
+    cfun(uarg)
+        c(u) function
+    plot_abc(uarg)
+        Vizualize functions a, b, and c
 
     """
     def __init__(self, param=ARGparams()):
@@ -141,7 +156,7 @@ class ARG(object):
         return self.param.delta \
             * np.log(1 + self.param.scale * uarg / (1-self.param.rho))
 
-    def plot_abfun(self, uarg):
+    def plot_abc(self, uarg):
         """Plot a() and b() functions on the same plot.
 
         """

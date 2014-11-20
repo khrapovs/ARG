@@ -12,7 +12,7 @@ def test_arg():
 
     argmodel = arg.ARG()
     uarg = np.linspace(-50, 100, 100)
-    argmodel.plot_abfun(uarg)
+    argmodel.plot_abc(uarg)
 
 if __name__ == '__main__':
     test_arg()
