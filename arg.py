@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy.stats as st
 
-from argparams import ARGparams
+from ARG.argparams import ARGparams
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
