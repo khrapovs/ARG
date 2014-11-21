@@ -1,1 +1,2 @@
-from .arg import ARGparams, ARG
+from .arg import ARG
+from .argparams import ARGparams
