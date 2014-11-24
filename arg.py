@@ -86,6 +86,31 @@ class ARG(object):
         """
         return self.param.rho * uarg / (1 + self.param.scale * uarg)
 
+    def dafun(self, uarg):
+        """Derivative of function a() with respect to scale, rho, and delta.
+
+        .. math::
+            \frac{\partial a}{\partial c}\left(u\right)
+                &=-\frac{\rho u^2}{\left(1+cu\right)^2} \\
+            \frac{\partial a}{\partial \rho}a\left(u\right)
+                &=\frac{u}{1+cu} \\
+            \frac{\partial a}{\partial \delta}a\left(u\right)
+                &=0
+
+        Parameters
+        ----------
+        uarg : array
+
+        Returns
+        -------
+        da(u)/dtheta : (3, nu) array
+
+        """
+        da_scale = -self.param.rho*uarg**2/(self.param.scale*uarg + 1)**2
+        da_rho = uarg/(self.param.scale*uarg + 1)
+        da_delta = np.zeros_like(uarg)
+        return np.vstack((da_scale, da_rho, da_delta))
+
     def bfun(self, uarg):
         """Function b().
 
@@ -102,6 +127,31 @@ class ARG(object):
 
         """
         return self.param.delta * np.log(1 + self.param.scale * uarg)
+
+    def dbfun(self, uarg):
+        """Derivative of function b() with respect to scale, rho, and delta.
+
+        .. math::
+            \frac{\partial b}{\partial c}\left(u\right)
+                &=\frac{\delta u}{1+cu} \\
+            \frac{\partial b}{\partial \rho}\left(u\right)
+                &=0 \\
+            \frac{\partial b}{\partial \delta}\left(u\right)
+                &=\log\left(1+cu\right)
+
+        Parameters
+        ----------
+        uarg : array
+
+        Returns
+        -------
+        db(u)/dtheta : (3, nu) array
+
+        """
+        db_scale = self.param.delta * uarg / (1 + self.param.scale * uarg)
+        db_rho = np.zeros_like(uarg)
+        db_delta = np.log(1 + self.param.scale * uarg)
+        return np.vstack((db_scale, db_rho, db_delta))
 
     def cfun(self, uarg):
         """Function c().

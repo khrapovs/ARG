@@ -42,6 +42,7 @@ def estimate_mle():
     print('Final parameter: ', param_final)
     print(type(results))
 
+
 if __name__ == '__main__':
     #play_with_arg()
     estimate_mle()

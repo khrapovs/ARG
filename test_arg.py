@@ -17,6 +17,7 @@ __status__ = "Development"
 
 
 class ARGTestCase(ut.TestCase):
+    """Test ARG, ARGparams model classes."""
 
     def test_param_class(self):
         """Test parameter class."""
@@ -56,7 +57,6 @@ class ARGTestCase(ut.TestCase):
         # TODO : test using symbolic library
         # that these moments coincide with derivatives of a, b, c
 
-
     def test_abc_functions(self):
         """Test functions a, b, c of ARG model."""
 
@@ -70,6 +70,18 @@ class ARGTestCase(ut.TestCase):
         self.assertEqual(uarg.shape, argmodel.afun(uarg).shape)
         self.assertEqual(uarg.shape, argmodel.bfun(uarg).shape)
         self.assertEqual(uarg.shape, argmodel.cfun(uarg).shape)
+
+    def test_abc_derivatives(self):
+        """Test derivatives of functions a, b, c of ARG model."""
+
+        argmodel = ARG()
+        uarg = np.linspace(-50, 100, 100)
+
+        self.assertIsInstance(argmodel.dafun(uarg), np.ndarray)
+        self.assertIsInstance(argmodel.dbfun(uarg), np.ndarray)
+
+        self.assertEqual(argmodel.dafun(uarg).shape, (3, uarg.shape[0]))
+        self.assertEqual(argmodel.dbfun(uarg).shape, (3, uarg.shape[0]))
 
     def test_simulations(self):
         """Test simulation of ARG model."""

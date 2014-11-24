@@ -32,5 +32,5 @@ def likelihood_vol(theta, vol):
     param = ARGparams(theta=theta)
     degf = param.delta * 2
     nonc = param.rho * vol[:-1] / param.scale * 2
-    logf = - st.ncx2.logpdf(vol[1:], degf, nonc, scale=param.scale/2)
-    return logf[~np.isnan(logf)].mean()
+    logf = st.ncx2.logpdf(vol[1:], degf, nonc, scale=param.scale/2)
+    return -logf[~np.isnan(logf)].mean()
