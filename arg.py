@@ -273,7 +273,6 @@ class ARG(object):
     def plot_vlast_density(self, nsim=100, nobs=100):
         """Plot the marginal density of ARG process."""
 
-        sns.set_palette("hls", 1)
         plt.figure(figsize=(8, 4))
         vol = self.vsim_last(nsim=int(nsim), nobs=int(nobs))
         sns.distplot(vol, rug=True, hist=False)

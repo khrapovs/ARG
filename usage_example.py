@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""Usage example.
+
+"""
 from __future__ import print_function, division
 
 import numpy as np

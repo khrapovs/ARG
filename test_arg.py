@@ -27,6 +27,22 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(param.delta, float)
         self.assertIsInstance(param.beta, float)
 
+        scale, rho, delta = .1, 0, 0
+        theta_true = [scale, rho, delta]
+        param = ARGparams(scale=scale, rho=rho, delta=delta)
+        self.assertIsInstance(param.theta, list)
+        self.assertEqual(param.theta, theta_true)
+
+        scale, rho, delta = 1, 2, 3
+        theta_true = [scale, rho, delta]
+        param = ARGparams(theta=theta_true)
+        self.assertEqual(param.scale, scale)
+        self.assertEqual(param.rho, rho)
+        self.assertEqual(param.delta, delta)
+
+        theta = [0, 0]
+        self.assertRaises(AssertionError, lambda: ARGparams(theta=theta))
+
     def test_uncond_moments(self):
         """Test unconditional moments of the ARG model."""
 

@@ -15,15 +15,25 @@ class ARGparams(object):
     rho : float
     delta : float
 
+    Methods
+    -------
+    convert_to_theta
+        Convert parameters to the vector
+
     """
-    def __init__(self, scale=.001, rho=.9, delta=1.1):
+    def __init__(self, scale=.001, rho=.9, delta=1.1, theta=None):
         """Initialize the class instance.
 
         """
+        if theta:
+            assert len(theta) == 3, "Wrong number of parameters in theta!"
+            [scale, rho, delta] = theta
         self.scale = scale
         self.rho = rho
         self.delta = delta
+        assert scale > 0, "Scale must be greater than zero!"
         self.beta = self.rho / self.scale
+        self.theta = [scale, rho, delta]
 
     def __repr__(self):
         """This is what is shown when you interactively explore the instance.
