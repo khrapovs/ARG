@@ -8,7 +8,7 @@ from __future__ import print_function, division
 import unittest as ut
 import numpy as np
 
-from ARG import ARGparams, ARG
+from ARG import ARGparams, ARG, likelihood_vol
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -95,6 +95,15 @@ class ARGTestCase(ut.TestCase):
         nsim, nobs = int(1e3), int(1e3)
         self.assertGreater(argmodel.vsim(nsim=nsim, nobs=nobs).all(), 0)
         self.assertGreater(argmodel.vsim2(nsim=nsim, nobs=nobs).all(), 0)
+
+    def test_likelihoods(self):
+        """Test likelihood functions."""
+
+        theta = [1, 1, 1]
+        vol = np.array([1, 2, 3])
+        self.assertIsInstance(likelihood_vol(theta, vol), float)
+        vol = np.array([1])
+        self.assertRaises(AssertionError, lambda: likelihood_vol(theta, vol))
 
 
 if __name__ == '__main__':
