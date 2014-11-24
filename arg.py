@@ -255,7 +255,7 @@ class ARG(object):
             Last observations
 
         TODO : This function could be less time consuming
-            if intermediate values were not creted.
+            if intermediate values were not created.
 
         """
         return self.vsim(**args)[:, -1]
