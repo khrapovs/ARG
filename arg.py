@@ -45,6 +45,8 @@ class ARG(object):
     ----------
     param : ARGparams instance
         Parameters of the model
+    vol : (nobs, ) array
+        Time series data
 
     Methods
     -------
@@ -59,10 +61,11 @@ class ARG(object):
 
     """
     def __init__(self, param=ARGparams()):
-        """INitialize class instance.
+        """Initialize class instance.
 
         """
         self.param = param
+        self.vol = None
 
     def afun(self, uarg):
         """Function a().
@@ -278,6 +281,19 @@ class ARG(object):
         sns.distplot(vol, rug=True, hist=False)
         plt.show()
 
+    def load_data(self, vol=None):
+        """Load data to the class.
+
+        Parameters
+        ----------
+        vol : (nobs, ) array
+            Time series
+
+        """
+        if not vol is None:
+            self.vol = vol
+        else:
+            raise(ValueError, "No data is given!")
 
 if __name__ == '__main__':
     from usage_example import play_with_arg

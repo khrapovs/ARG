@@ -105,6 +105,13 @@ class ARGTestCase(ut.TestCase):
         vol = np.array([1])
         self.assertRaises(AssertionError, lambda: likelihood_vol(theta, vol))
 
+    def test_load_data(self):
+        """Test load data method."""
+        vol = np.array([1, 2, 3])
+        argmodel = ARG()
+        argmodel.load_data(vol=vol)
+        np.testing.assert_array_equal(argmodel.vol, vol)
+
 
 if __name__ == '__main__':
     ut.main()
