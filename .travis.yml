@@ -3,7 +3,7 @@ python:
   - 2.7
   - 3.4
 notifications:
-  email: false
+  email: true
 
 # Setup anaconda
 before_install:
