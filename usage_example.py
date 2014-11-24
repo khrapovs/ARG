@@ -29,5 +29,19 @@ def play_with_arg():
 
     argmodel.plot_vlast_density(nsim=1000)
 
+def estimate_mle():
+    """Try MLE estimator."""
+    param_true = ARGparams()
+    argmodel = ARG(param=param_true)
+    nsim, nobs = 1, 500
+    vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+    argmodel.load_data(vol=vol)
+    param_final, results = argmodel.estimate_mle(param_start=param_true)
+
+    print('True parameter:', param_true)
+    print('Final parameter: ', param_final)
+    print(type(results))
+
 if __name__ == '__main__':
-    play_with_arg()
+    #play_with_arg()
+    estimate_mle()

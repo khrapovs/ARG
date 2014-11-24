@@ -7,6 +7,7 @@ from __future__ import print_function, division
 
 import unittest as ut
 import numpy as np
+import scipy.optimize as so
 
 from ARG import ARGparams, ARG, likelihood_vol
 
@@ -30,8 +31,8 @@ class ARGTestCase(ut.TestCase):
         scale, rho, delta = .1, 0, 0
         theta_true = [scale, rho, delta]
         param = ARGparams(scale=scale, rho=rho, delta=delta)
-        self.assertIsInstance(param.theta, list)
-        self.assertEqual(param.theta, theta_true)
+        self.assertIsInstance(param.theta, np.ndarray)
+        np.testing.assert_array_equal(param.theta, theta_true)
 
         scale, rho, delta = 1, 2, 3
         theta_true = [scale, rho, delta]
@@ -99,7 +100,7 @@ class ARGTestCase(ut.TestCase):
     def test_likelihoods(self):
         """Test likelihood functions."""
 
-        theta = [1, 1, 1]
+        theta = np.array([1, 1, 1])
         vol = np.array([1, 2, 3])
         self.assertIsInstance(likelihood_vol(theta, vol), float)
         vol = np.array([1])
@@ -111,6 +112,20 @@ class ARGTestCase(ut.TestCase):
         argmodel = ARG()
         argmodel.load_data(vol=vol)
         np.testing.assert_array_equal(argmodel.vol, vol)
+
+    def test_estimate_mle(self):
+        """Test MLE estimation."""
+        param_true = ARGparams()
+        argmodel = ARG(param=param_true)
+        nsim, nobs = 1, 500
+        vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+        argmodel.load_data(vol=vol)
+        param_final, results = argmodel.estimate_mle(param_start=param_true)
+        ratio = param_true.theta / param_final.theta
+
+        self.assertIsInstance(param_final, ARGparams)
+        self.assertIsInstance(results, so.optimize.OptimizeResult)
+        np.testing.assert_allclose(ratio, np.ones_like(ratio), rtol=1e1)
 
 
 if __name__ == '__main__':

@@ -5,6 +5,7 @@
 """
 from __future__ import print_function, division
 
+import numpy as np
 
 class ARGparams(object):
     """Class for ARG model parameters.
@@ -15,7 +16,7 @@ class ARGparams(object):
     rho : float
     delta : float
     beta : float
-    theta : list
+    theta : array
 
     Raises
     ------
@@ -26,7 +27,7 @@ class ARGparams(object):
         """Initialize the class instance.
 
         """
-        if theta:
+        if not theta is None:
             assert len(theta) == 3, "Wrong number of parameters in theta!"
             [scale, rho, delta] = theta
         self.scale = scale
@@ -34,7 +35,7 @@ class ARGparams(object):
         self.delta = delta
         assert scale > 0, "Scale must be greater than zero!"
         self.beta = self.rho / self.scale
-        self.theta = [scale, rho, delta]
+        self.theta = np.array([scale, rho, delta])
 
     def __repr__(self):
         """This is what is shown when you interactively explore the instance.

@@ -27,6 +27,8 @@ def likelihood_vol(theta, vol):
 
     """
     assert vol.shape[0] > 1, "Volatility series is too short!"
+    if theta.min() <= 0:
+        return 1e10
     param = ARGparams(theta=theta)
     degf = param.delta * 2
     nonc = param.rho * vol[:-1] / param.scale * 2

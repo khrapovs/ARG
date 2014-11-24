@@ -26,8 +26,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy.stats as st
+from scipy.optimize import minimize
 
 from ARG.argparams import ARGparams
+from ARG.likelihoods import  likelihood_vol
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -295,6 +297,24 @@ class ARG(object):
         else:
             raise(ValueError, "No data is given!")
 
+    def estimate_mle(self, param_start=ARGparams()):
+        """Estimate model parameters.
+
+        Returns
+        -------
+        param_final : ARGparams instance
+            Estimated parameters
+
+        """
+        # Optimization options
+        options = {'disp': False, 'maxiter': int(1e6)}
+        results = minimize(likelihood_vol, param_start.theta,
+                           args=(self.vol, ), method='L-BFGS-B',
+                           options=options)
+        param_final = ARGparams(theta=results.x)
+        return param_final, results
+
+
 if __name__ == '__main__':
-    from usage_example import play_with_arg
-    play_with_arg()
+    from usage_example import play_with_arg, estimate_mle
+    estimate_mle()
