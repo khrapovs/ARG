@@ -58,6 +58,10 @@ class ARG(object):
         b(u) function
     cfun(uarg)
         c(u) function
+    dafun(uarg)
+        Derivative of a(u) function wrt scale, rho, and delta
+    dbfun(uarg)
+        Derivative of b(u) function wrt scale, rho, and delta
     plot_abc(uarg)
         Vizualize functions a, b, and c
 
