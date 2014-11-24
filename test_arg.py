@@ -61,27 +61,29 @@ class ARGTestCase(ut.TestCase):
         """Test functions a, b, c of ARG model."""
 
         argmodel = ARG()
-        uarg = np.linspace(-50, 100, 100)
+        for i in [1, 10]:
+            uarg = np.linspace(-50, 100, 10)
 
-        self.assertIsInstance(argmodel.afun(uarg), np.ndarray)
-        self.assertIsInstance(argmodel.bfun(uarg), np.ndarray)
-        self.assertIsInstance(argmodel.cfun(uarg), np.ndarray)
+            self.assertIsInstance(argmodel.afun(uarg), np.ndarray)
+            self.assertIsInstance(argmodel.bfun(uarg), np.ndarray)
+            self.assertIsInstance(argmodel.cfun(uarg), np.ndarray)
 
-        self.assertEqual(uarg.shape, argmodel.afun(uarg).shape)
-        self.assertEqual(uarg.shape, argmodel.bfun(uarg).shape)
-        self.assertEqual(uarg.shape, argmodel.cfun(uarg).shape)
+            self.assertEqual(uarg.shape, argmodel.afun(uarg).shape)
+            self.assertEqual(uarg.shape, argmodel.bfun(uarg).shape)
+            self.assertEqual(uarg.shape, argmodel.cfun(uarg).shape)
 
     def test_abc_derivatives(self):
         """Test derivatives of functions a, b, c of ARG model."""
 
         argmodel = ARG()
-        uarg = np.linspace(-50, 100, 100)
+        for i in [1, 10]:
+            uarg = np.linspace(-50, 100, 10)
 
-        self.assertIsInstance(argmodel.dafun(uarg), np.ndarray)
-        self.assertIsInstance(argmodel.dbfun(uarg), np.ndarray)
+            self.assertIsInstance(argmodel.dafun(uarg), np.ndarray)
+            self.assertIsInstance(argmodel.dbfun(uarg), np.ndarray)
 
-        self.assertEqual(argmodel.dafun(uarg).shape, (3, uarg.shape[0]))
-        self.assertEqual(argmodel.dbfun(uarg).shape, (3, uarg.shape[0]))
+            self.assertEqual(argmodel.dafun(uarg).shape, (3, uarg.shape[0]))
+            self.assertEqual(argmodel.dbfun(uarg).shape, (3, uarg.shape[0]))
 
     def test_simulations(self):
         """Test simulation of ARG model."""
@@ -92,22 +94,20 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(argmodel.vsim2(), np.ndarray)
 
         nsim, nobs = 1, 1
-        shape = (nsim, nobs)
-        self.assertEqual(argmodel.vsim(nsim=nsim, nobs=nobs).shape, shape)
-        self.assertEqual(argmodel.vsim2(nsim=nsim, nobs=nobs).shape, shape)
-        self.assertEqual(argmodel.vsim_last(nsim=nsim, nobs=nobs).shape,
-                         (nsim, ))
-
+        shapes = []
+        shapes.append((nsim, nobs))
         nsim, nobs = 2, 2
-        shape = (nsim, nobs)
-        self.assertEqual(argmodel.vsim(nsim=nsim, nobs=nobs).shape, shape)
-        self.assertEqual(argmodel.vsim2(nsim=nsim, nobs=nobs).shape, shape)
-        self.assertEqual(argmodel.vsim_last(nsim=nsim, nobs=nobs).shape,
-                         (nsim, ))
-
+        shapes.append((nsim, nobs))
         nsim, nobs = int(1e3), int(1e3)
-        self.assertGreater(argmodel.vsim(nsim=nsim, nobs=nobs).all(), 0)
-        self.assertGreater(argmodel.vsim2(nsim=nsim, nobs=nobs).all(), 0)
+        shapes.append((nsim, nobs))
+        for shape in shapes:
+            nsim, nobs = shape
+            self.assertEqual(argmodel.vsim(nsim=nsim, nobs=nobs).shape, shape)
+            self.assertEqual(argmodel.vsim2(nsim=nsim, nobs=nobs).shape, shape)
+            self.assertEqual(argmodel.vsim_last(nsim=nsim, nobs=nobs).shape,
+                             (nsim, ))
+            self.assertGreater(argmodel.vsim(nsim=nsim, nobs=nobs).min(), 0)
+            self.assertGreater(argmodel.vsim2(nsim=nsim, nobs=nobs).min(), 0)
 
     def test_likelihoods(self):
         """Test likelihood functions."""
