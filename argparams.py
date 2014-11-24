@@ -14,11 +14,12 @@ class ARGparams(object):
     scale : float
     rho : float
     delta : float
+    beta : float
+    theta : list
 
-    Methods
-    -------
-    convert_to_theta
-        Convert parameters to the vector
+    Raises
+    ------
+    AssertionError
 
     """
     def __init__(self, scale=.001, rho=.9, delta=1.1, theta=None):
