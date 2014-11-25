@@ -27,9 +27,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy.stats as st
 from scipy.optimize import minimize
+from statsmodels.tsa.tsatools import lagmat
 
 from ARG.argparams import ARGparams
-from ARG.likelihoods import  likelihood_vol
+from ARG.likelihoods import likelihood_vol
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -86,6 +87,7 @@ class ARG(object):
         Returns
         -------
         a(u) : array
+            Same dimension as uarg
 
         """
         return self.param.rho * uarg / (1 + self.param.scale * uarg)
@@ -103,15 +105,15 @@ class ARG(object):
 
         Parameters
         ----------
-        uarg : array
+        uarg : (nu, ) array
 
         Returns
         -------
         da(u)/dtheta : (3, nu) array
 
         """
-        da_scale = -self.param.rho*uarg**2/(self.param.scale*uarg + 1)**2
-        da_rho = uarg/(self.param.scale*uarg + 1)
+        da_scale = -self.param.rho * uarg**2 / (self.param.scale*uarg + 1)**2
+        da_rho = uarg / (self.param.scale*uarg + 1)
         da_delta = np.zeros_like(uarg)
         return np.vstack((da_scale, da_rho, da_delta))
 
@@ -128,6 +130,7 @@ class ARG(object):
         Returns
         -------
         b(u) : array
+            Same dimension as uarg
 
         """
         return self.param.delta * np.log(1 + self.param.scale * uarg)
@@ -145,7 +148,7 @@ class ARG(object):
 
         Parameters
         ----------
-        uarg : array
+        uarg : (nu, ) array
 
         Returns
         -------
@@ -170,6 +173,7 @@ class ARG(object):
         Returns
         -------
         c(u) : array
+            Same dimension as uarg
 
         """
         return self.param.delta \
@@ -349,7 +353,7 @@ class ARG(object):
         if not vol is None:
             self.vol = vol
         else:
-            raise(ValueError, "No data is given!")
+            raise ValueError("No data is given!")
 
     def estimate_mle(self, param_start=ARGparams()):
         """Estimate model parameters.
@@ -367,6 +371,68 @@ class ARG(object):
                            options=options)
         param_final = ARGparams(theta=results.x)
         return param_final, results
+
+    def momcond(self, theta, uarg=None, instrlag=1):
+        """Moment conditions for spectral GMM estimator.
+
+        Parameters
+        ----------
+        theta : (3, ) array
+            Vector of model parameters. [scale, rho, delta]
+        uarg : (nu, ) array
+            Grid to evaluate a and b functions
+
+        Returns
+        -------
+        moment : (nobs, nmoms) array
+            Matrix of momcond restrictions
+        dmoment : (nmoms, nparams) array
+            Gradient of momcond restrictions. Mean over observations
+
+        Raises
+        ------
+        ValueError
+
+        """
+        if uarg is None:
+            raise ValueError("uarg is missing!")
+        if self.vol is None:
+            raise ValueError("vol data is missing!")
+
+        vollag, vol = lagmat(self.vol, maxlag=instrlag,
+                             original='sep', trim='both')
+        prevvol = vollag[:, 0][:, np.newaxis]
+        # Change class attribute with the current theta
+        self.param = ARGparams(theta=theta)
+        nobs = vol.shape[0]
+        # Must be (nobs, nu) array
+        exparg = - prevvol * self.afun(uarg)
+        exparg  -= np.ones((nobs, 1)) * self.bfun(uarg)
+        # Must be (nobs, nu) array
+        error = np.exp(-vol * uarg) - np.exp(exparg)
+        # Instruments, (nobs, ninstr) array
+        instr = np.exp(-1j * vollag)
+        # Must be (nobs, nmoms) array
+        nmoms = uarg.shape[0] * instr.shape[1]
+        moment = error[:, np.newaxis, :] * instr[:, :, np.newaxis]
+        moment = moment.reshape((nobs, nmoms))
+        # (nobs, 2 * ninstr)
+        moment = np.hstack([np.real(moment), np.imag(moment)])
+
+        # Initialize derivative matrix
+        dmoment = np.empty((moment.shape[1], theta.shape[0]))
+        for i in range(theta.shape[0]):
+            dexparg = - prevvol * self.dafun(uarg)[i]
+            dexparg -= np.ones((nobs, 1)) * self.dbfun(uarg)[i]
+            derror = - np.exp(exparg) * dexparg
+
+            derrorinstr = derror[:, np.newaxis, :] * instr[:, :, np.newaxis]
+            derrorinstr = derrorinstr.reshape((nobs, nmoms))
+            derrorinstr = np.hstack([np.real(derrorinstr),
+                                     np.imag(derrorinstr)])
+            dmoment[:, i] = derrorinstr.mean(0)
+
+        return moment, dmoment
 
 
 if __name__ == '__main__':

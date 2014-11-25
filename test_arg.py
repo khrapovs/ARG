@@ -93,8 +93,8 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(argmodel.vsim(), np.ndarray)
         self.assertIsInstance(argmodel.vsim2(), np.ndarray)
 
-        nsim, nobs = 1, 1
         shapes = []
+        nsim, nobs = 1, 1
         shapes.append((nsim, nobs))
         nsim, nobs = 2, 2
         shapes.append((nsim, nobs))
@@ -122,6 +122,7 @@ class ARGTestCase(ut.TestCase):
         """Test load data method."""
         vol = np.array([1, 2, 3])
         argmodel = ARG()
+        self.assertRaises(ValueError, lambda: argmodel.load_data())
         argmodel.load_data(vol=vol)
         np.testing.assert_array_equal(argmodel.vol, vol)
 
@@ -138,6 +139,28 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(param_final, ARGparams)
         self.assertIsInstance(results, so.optimize.OptimizeResult)
         np.testing.assert_allclose(ratio, np.ones_like(ratio), rtol=1e1)
+
+    def test_momcond(self):
+        """Test moment condition method."""
+        theta = np.array([1, 1, 1])
+        uarg = np.array([-1, 0, 1])
+        argmodel = ARG()
+        self.assertRaises(ValueError, lambda: argmodel.momcond(theta))
+        fun = lambda: argmodel.momcond(theta, uarg=uarg)
+        self.assertRaises(ValueError, fun)
+
+        nsim, nobs = 1, 10
+        instrlag = 2
+        vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+        argmodel.load_data(vol=vol)
+        moment, dmoment = argmodel.momcond(theta, uarg=uarg, instrlag=instrlag)
+        np.testing.assert_array_equal(argmodel.param.theta, theta)
+
+        momshape = (vol.shape[0]-instrlag, 2*uarg.shape[0]*instrlag)
+        dmomshape = (2*uarg.shape[0]*instrlag, theta.shape[0])
+        self.assertEqual(moment.shape, momshape)
+        self.assertEqual(dmoment.shape, dmomshape)
+
 
 
 if __name__ == '__main__':
