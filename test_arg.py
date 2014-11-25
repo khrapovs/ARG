@@ -10,6 +10,7 @@ import numpy as np
 import scipy.optimize as so
 
 from ARG import ARGparams, ARG, likelihood_vol
+from MyGMM import Results
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -32,12 +33,14 @@ class ARGTestCase(ut.TestCase):
         scale, rho, delta = .1, 0, 0
         theta_true = [scale, rho, delta]
         param = ARGparams(scale=scale, rho=rho, delta=delta)
+
         self.assertIsInstance(param.theta, np.ndarray)
         np.testing.assert_array_equal(param.theta, theta_true)
 
         scale, rho, delta = 1, 2, 3
         theta_true = [scale, rho, delta]
         param = ARGparams(theta=theta_true)
+
         self.assertEqual(param.scale, scale)
         self.assertEqual(param.rho, rho)
         self.assertEqual(param.delta, delta)
@@ -100,8 +103,10 @@ class ARGTestCase(ut.TestCase):
         shapes.append((nsim, nobs))
         nsim, nobs = int(1e3), int(1e3)
         shapes.append((nsim, nobs))
+
         for shape in shapes:
             nsim, nobs = shape
+
             self.assertEqual(argmodel.vsim(nsim=nsim, nobs=nobs).shape, shape)
             self.assertEqual(argmodel.vsim2(nsim=nsim, nobs=nobs).shape, shape)
             self.assertEqual(argmodel.vsim_last(nsim=nsim, nobs=nobs).shape,
@@ -114,8 +119,11 @@ class ARGTestCase(ut.TestCase):
 
         theta = np.array([1, 1, 1])
         vol = np.array([1, 2, 3])
+
         self.assertIsInstance(likelihood_vol(theta, vol), float)
+
         vol = np.array([1])
+
         self.assertRaises(AssertionError, lambda: likelihood_vol(theta, vol))
 
     def test_load_data(self):
@@ -124,6 +132,7 @@ class ARGTestCase(ut.TestCase):
         argmodel = ARG()
         self.assertRaises(ValueError, lambda: argmodel.load_data())
         argmodel.load_data(vol=vol)
+
         np.testing.assert_array_equal(argmodel.vol, vol)
 
     def test_estimate_mle(self):
@@ -154,12 +163,28 @@ class ARGTestCase(ut.TestCase):
         vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
         argmodel.load_data(vol=vol)
         moment, dmoment = argmodel.momcond(theta, uarg=uarg, instrlag=instrlag)
+
         np.testing.assert_array_equal(argmodel.param.theta, theta)
 
         momshape = (vol.shape[0]-instrlag, 2*uarg.shape[0]*instrlag)
         dmomshape = (2*uarg.shape[0]*instrlag, theta.shape[0])
+
         self.assertEqual(moment.shape, momshape)
         self.assertEqual(dmoment.shape, dmomshape)
+
+    def test_gmmest(self):
+        """Test GMM estimation."""
+        param_true = ARGparams()
+        argmodel = ARG(param=param_true)
+        nsim, nobs = 1, 500
+        vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+        argmodel.load_data(vol=vol)
+        uarg = np.linspace(.1, 10, 3) * 1j
+        results = argmodel.gmmest(param_true.theta, uarg=uarg, instrlag=2)
+
+        self.assertIsInstance(results, Results)
+        self.assertIsInstance(results.theta, np.ndarray)
+        self.assertEqual(results.theta.shape[0], param_true.theta.shape[0])
 
 
 

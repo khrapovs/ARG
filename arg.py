@@ -31,13 +31,14 @@ from statsmodels.tsa.tsatools import lagmat
 
 from ARG.argparams import ARGparams
 from ARG.likelihoods import likelihood_vol
+from MyGMM import GMM
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
 __status__ = "Development"
 
 
-class ARG(object):
+class ARG(GMM):
     """Class for ARG model.
 
     .. math::
@@ -71,6 +72,7 @@ class ARG(object):
         """Initialize class instance.
 
         """
+        super(ARG, self).__init__()
         self.param = param
         self.vol = None
 
@@ -394,6 +396,7 @@ class ARG(object):
         ValueError
 
         """
+
         if uarg is None:
             raise ValueError("uarg is missing!")
         if self.vol is None:
@@ -402,9 +405,20 @@ class ARG(object):
         vollag, vol = lagmat(self.vol, maxlag=instrlag,
                              original='sep', trim='both')
         prevvol = vollag[:, 0][:, np.newaxis]
+        # Number of observations after truncation
+        nobs = vol.shape[0]
+        # Number of moments
+        nmoms = 2 * uarg.shape[0] * instrlag
+        # Number of instruments
+        nparams = theta.shape[0]
+
+        if theta.min() <= 0:
+            moment = np.ones((nobs, nmoms)) * 1e10
+            dmoment = np.ones((nmoms, nparams)) * 1e10
+            return moment, dmoment
         # Change class attribute with the current theta
         self.param = ARGparams(theta=theta)
-        nobs = vol.shape[0]
+
         # Must be (nobs, nu) array
         exparg = - prevvol * self.afun(uarg)
         exparg  -= np.ones((nobs, 1)) * self.bfun(uarg)
@@ -413,21 +427,20 @@ class ARG(object):
         # Instruments, (nobs, ninstr) array
         instr = np.exp(-1j * vollag)
         # Must be (nobs, nmoms) array
-        nmoms = uarg.shape[0] * instr.shape[1]
         moment = error[:, np.newaxis, :] * instr[:, :, np.newaxis]
-        moment = moment.reshape((nobs, nmoms))
+        moment = moment.reshape((nobs, nmoms/2))
         # (nobs, 2 * ninstr)
         moment = np.hstack([np.real(moment), np.imag(moment)])
 
         # Initialize derivative matrix
-        dmoment = np.empty((moment.shape[1], theta.shape[0]))
-        for i in range(theta.shape[0]):
+        dmoment = np.empty((nmoms, nparams))
+        for i in range(nparams):
             dexparg = - prevvol * self.dafun(uarg)[i]
             dexparg -= np.ones((nobs, 1)) * self.dbfun(uarg)[i]
             derror = - np.exp(exparg) * dexparg
 
             derrorinstr = derror[:, np.newaxis, :] * instr[:, :, np.newaxis]
-            derrorinstr = derrorinstr.reshape((nobs, nmoms))
+            derrorinstr = derrorinstr.reshape((nobs, nmoms/2))
             derrorinstr = np.hstack([np.real(derrorinstr),
                                      np.imag(derrorinstr)])
             dmoment[:, i] = derrorinstr.mean(0)
