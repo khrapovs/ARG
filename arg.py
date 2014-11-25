@@ -39,6 +39,7 @@ __status__ = "Development"
 
 
 class ARG(GMM):
+
     """Class for ARG model.
 
     .. math::
@@ -68,6 +69,7 @@ class ARG(GMM):
         Vizualize functions a, b, and c
 
     """
+
     def __init__(self, param=ARGparams()):
         """Initialize class instance.
 
@@ -421,7 +423,7 @@ class ARG(GMM):
 
         # Must be (nobs, nu) array
         exparg = - prevvol * self.afun(uarg)
-        exparg  -= np.ones((nobs, 1)) * self.bfun(uarg)
+        exparg -= np.ones((nobs, 1)) * self.bfun(uarg)
         # Must be (nobs, nu) array
         error = np.exp(-vol * uarg) - np.exp(exparg)
         # Instruments, (nobs, ninstr) array

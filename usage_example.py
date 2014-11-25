@@ -54,7 +54,9 @@ def estimate_gmm():
 
     print('True parameter:', param_true)
     print('Final parameter: ', ARGparams(theta=results.theta))
-    print(type(results))
+    print('Std: ', results.tstat)
+    results.print_results()
+
 
 if __name__ == '__main__':
     #play_with_arg()
