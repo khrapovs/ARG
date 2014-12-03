@@ -50,7 +50,7 @@ def estimate_gmm():
     vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
     argmodel.load_data(vol=vol)
     uarg = np.linspace(.1, 10, 3) * 1j
-    results = argmodel.gmmest(param_true.theta, uarg=uarg, instrlag=2)
+    results = argmodel.gmmest(param_true.theta, uarg=uarg, zlag=2)
 
     print('True parameter:', param_true)
     print('Final parameter: ', ARGparams(theta=results.theta))
