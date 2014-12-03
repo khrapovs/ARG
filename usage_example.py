@@ -43,7 +43,7 @@ def estimate_mle():
     print(type(results))
 
 def estimate_gmm():
-    """Try MLE estimator."""
+    """Try GMM estimator."""
     param_true = ARGparams()
     argmodel = ARG(param=param_true)
     nsim, nobs = 1, 500
