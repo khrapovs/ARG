@@ -376,7 +376,7 @@ class ARG(GMM):
         param_final = ARGparams(theta=results.x)
         return param_final, results
 
-    def momcond(self, theta, uarg=None, instrlag=1):
+    def momcond(self, theta, uarg=None, zlag=1):
         """Moment conditions for spectral GMM estimator.
 
         Parameters
@@ -385,6 +385,8 @@ class ARG(GMM):
             Vector of model parameters. [scale, rho, delta]
         uarg : (nu, ) array
             Grid to evaluate a and b functions
+        zlag : int
+            Number of lags to use for the instrument
 
         Returns
         -------
@@ -404,13 +406,13 @@ class ARG(GMM):
         if self.vol is None:
             raise ValueError("vol data is missing!")
 
-        vollag, vol = lagmat(self.vol, maxlag=instrlag,
+        vollag, vol = lagmat(self.vol, maxlag=zlag,
                              original='sep', trim='both')
         prevvol = vollag[:, 0][:, np.newaxis]
         # Number of observations after truncation
         nobs = vol.shape[0]
         # Number of moments
-        nmoms = 2 * uarg.shape[0] * instrlag
+        nmoms = 2 * uarg.shape[0] * zlag
         # Number of instruments
         nparams = theta.shape[0]
 

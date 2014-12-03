@@ -162,7 +162,7 @@ class ARGTestCase(ut.TestCase):
         instrlag = 2
         vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
         argmodel.load_data(vol=vol)
-        moment, dmoment = argmodel.momcond(theta, uarg=uarg, instrlag=instrlag)
+        moment, dmoment = argmodel.momcond(theta, uarg=uarg, zlag=instrlag)
 
         np.testing.assert_array_equal(argmodel.param.theta, theta)
 
@@ -180,7 +180,7 @@ class ARGTestCase(ut.TestCase):
         vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
         argmodel.load_data(vol=vol)
         uarg = np.linspace(.1, 10, 3) * 1j
-        results = argmodel.gmmest(param_true.theta, uarg=uarg, instrlag=2)
+        results = argmodel.gmmest(param_true.theta, uarg=uarg, zlag=2)
 
         self.assertIsInstance(results, Results)
         self.assertIsInstance(results.theta, np.ndarray)
