@@ -187,6 +187,5 @@ class ARGTestCase(ut.TestCase):
         self.assertEqual(results.theta.shape[0], param_true.theta.shape[0])
 
 
-
 if __name__ == '__main__':
     ut.main()
