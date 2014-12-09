@@ -14,7 +14,7 @@ before_install:
   - conda update --yes conda
   - wget https://github.com/khrapovs/MyGMM/archive/master.zip -P ../
   - unzip ../master.zip
-  - mv ../MyGMM-master/ ../MyGMM/
+  - mv MyGMM-master/ ../MyGMM/
   - export PATH=$PWD:$PATH
   # The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
   - sudo rm -rf /dev/shm
