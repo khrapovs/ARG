@@ -7,7 +7,7 @@ from __future__ import print_function, division
 
 import numpy as np
 
-from ARG import ARG, ARGparams
+from argamma import ARG, ARGparams, ARGGMM
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -45,7 +45,7 @@ def estimate_mle():
 def estimate_gmm():
     """Try GMM estimator."""
     param_true = ARGparams()
-    argmodel = ARG(param=param_true)
+    argmodel = ARGGMM(param=param_true)
     nsim, nobs = 1, 500
     vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
     argmodel.load_data(vol=vol)

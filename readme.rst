@@ -1,5 +1,5 @@
-.. image:: https://travis-ci.org/khrapovs/ARG.svg?branch=master
-    :target: https://travis-ci.org/khrapovs/ARG
+.. image:: https://travis-ci.org/khrapovs/argamma.svg?branch=master
+    :target: https://travis-ci.org/khrapovs/argamma
     
 ARG
 ===

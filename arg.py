@@ -1,36 +1,36 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""ARG model class
+r"""ARG model class
 
 References
 ----------
+
 .. [1] Stanislav Khrapov and Eric Renault (2014)
     "Affine Option Pricing Model in Discrete Time",
     working paper, New Economic School.
-    <https://sites.google.com/site/khrapovs/research
-    /Renault-Khrapov-2012-Affine-Option-Pricing.pdf>
+    <https://sites.google.com/site/khrapovs/research/Renault-Khrapov-2012-Affine-Option-Pricing.pdf>
 
 .. [2] Christian Gourieroux and Joann Jasiak (2006)
     "Autoregressive Gamma Processes",
-    2006, Journal of Forecasting, 25(2), 129–152. doi:10.1002/for.978
+    2006, *Journal of Forecasting*, 25(2), 129–152. doi:10.1002/for.978
 
 .. [3] Serge Darolles, Christian Gourieroux, and Joann Jasiak (2006)
     "Structural Laplace Transform and Compound Autoregressive Models"
-    Journal of Time Series Analysis, 27(4), 477–503.
+    *Journal of Time Series Analysis*, 27(4), 477–503.
     doi:10.1111/j.1467-9892.2006.00479.x
 
 """
 from __future__ import print_function, division
 
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.pylab as plt
 import seaborn as sns
-import scipy.stats as st
+import scipy.stats as scs
 from scipy.optimize import minimize
 from statsmodels.tsa.tsatools import lagmat
 
-from ARG.argparams import ARGparams
-from ARG.likelihoods import likelihood_vol
+from argamma.argparams import ARGparams
+from argamma.likelihoods import likelihood_vol
 from MyGMM import GMM
 
 __author__ = "Stanislav Khrapov"
@@ -40,33 +40,44 @@ __status__ = "Development"
 
 class ARG(GMM):
 
-    """Class for ARG model.
+    r"""Class for ARG model.
 
     .. math::
-        E\left[\left.\exp\left\{ -uY_{t}\right\} \right|Y_{t-1}\right]\\
+
+        E\left[\left.\exp\left\{ -uY_{t}\right\} \right|Y_{t-1}\right]
             =\exp\left\{ -a(u)Y_{t-1}-b(u)\right\}
 
     Attributes
     ----------
     param : ARGparams instance
         Parameters of the model
-    vol : (nobs, ) array
+    vol : 1d array
         Time series data
 
     Methods
     -------
-    afun(uarg)
+    afun
         a(u) function
-    bfun(uarg)
+    bfun
         b(u) function
-    cfun(uarg)
+    cfun
         c(u) function
-    dafun(uarg)
+    dafun
         Derivative of a(u) function wrt scale, rho, and delta
-    dbfun(uarg)
+    dbfun
         Derivative of b(u) function wrt scale, rho, and delta
-    plot_abc(uarg)
+    plot_abc
         Vizualize functions a, b, and c
+    vsim
+        Simulate ARG(1) process
+    vsim2
+        Simulate ARG(1) process
+    load_data
+        Load data to the class
+    estimate_mle
+        Estimate model parameters via Maximum Likelihood
+    momcond
+        Moment conditions for spectral GMM estimator
 
     """
 
@@ -79,9 +90,10 @@ class ARG(GMM):
         self.vol = None
 
     def afun(self, uarg):
-        """Function a().
+        r"""Function a().
 
         .. math::
+
             a\left(u\right)=\frac{\rho u}{1+cu}
 
         Parameters
@@ -90,14 +102,14 @@ class ARG(GMM):
 
         Returns
         -------
-        a(u) : array
+        array
             Same dimension as uarg
 
         """
         return self.param.rho * uarg / (1 + self.param.scale * uarg)
 
     def dafun(self, uarg):
-        """Derivative of function a() with respect to scale, rho, and delta.
+        r"""Derivative of function a() with respect to scale, rho, and delta.
 
         .. math::
             \frac{\partial a}{\partial c}\left(u\right)
@@ -113,7 +125,7 @@ class ARG(GMM):
 
         Returns
         -------
-        da(u)/dtheta : (3, nu) array
+        (3, nu) array
 
         """
         da_scale = -self.param.rho * uarg**2 / (self.param.scale*uarg + 1)**2
@@ -122,7 +134,7 @@ class ARG(GMM):
         return np.vstack((da_scale, da_rho, da_delta))
 
     def bfun(self, uarg):
-        """Function b().
+        r"""Function b().
 
         .. math::
             b\left(u\right)=\delta\log\left(1+cu\right)
@@ -133,14 +145,14 @@ class ARG(GMM):
 
         Returns
         -------
-        b(u) : array
+        array
             Same dimension as uarg
 
         """
         return self.param.delta * np.log(1 + self.param.scale * uarg)
 
     def dbfun(self, uarg):
-        """Derivative of function b() with respect to scale, rho, and delta.
+        r"""Derivative of function b() with respect to scale, rho, and delta.
 
         .. math::
             \frac{\partial b}{\partial c}\left(u\right)
@@ -156,7 +168,7 @@ class ARG(GMM):
 
         Returns
         -------
-        db(u)/dtheta : (3, nu) array
+        (3, nu) array
 
         """
         db_scale = self.param.delta * uarg / (1 + self.param.scale * uarg)
@@ -165,10 +177,10 @@ class ARG(GMM):
         return np.vstack((db_scale, db_rho, db_delta))
 
     def cfun(self, uarg):
-        """Function c().
+        r"""Function c().
 
         .. math::
-            c\left(u\right)=\delta\log\left\{ 1+\frac{cu}{1-\rho}\right\}
+            c\left(u\right)=\delta\log\left\{1+\frac{cu}{1-\rho}\right\}
 
         Parameters
         ----------
@@ -176,7 +188,7 @@ class ARG(GMM):
 
         Returns
         -------
-        c(u) : array
+        array
             Same dimension as uarg
 
         """
@@ -184,40 +196,40 @@ class ARG(GMM):
             * np.log(1 + self.param.scale * uarg / (1-self.param.rho))
 
     def umean(self):
-        """Unconditional mean of the process.
+        r"""Unconditional mean of the process.
 
         .. math::
             E\left[Y_{t}\right]=\frac{c\delta}{1-\rho}
 
         Returns
         -------
-        umean : float
+        float
 
         """
         return self.param.scale * self.param.delta / (1 - self.param.rho)
 
     def uvar(self):
-        """Unconditional variance of the process.
+        r"""Unconditional variance of the process.
 
         .. math::
             V\left[Y_{t}\right]=\frac{c^{2}\delta}{\left(1-\rho\right)^{2}}
 
         Returns
         -------
-        uvar : float
+        float
 
         """
         return self.umean() / self.param.delta
 
     def ustd(self):
-        """Unconditional variance of the process.
+        r"""Unconditional variance of the process.
 
         .. math::
             \sqrt{V\left[Y_{t}\right]}
 
         Returns
         -------
-        ustd : float
+        float
 
         """
         return self.uvar() ** .5
@@ -253,11 +265,12 @@ class ARG(GMM):
         plt.show()
 
     def vsim(self, nsim=1, nobs=int(1e2), param=ARGparams()):
-        """Simulate ARG(1) process.
+        r"""Simulate ARG(1) process.
 
         .. math::
-            Z_{t}|Y_{t-1}\sim\mathcal{P}\left(\beta Y_{t-1}\right)
-            Y_{t}|Z_{t}\sim\gamma\left(\delta+Z_{t},c\right)
+
+            Z_{t}|Y_{t-1}&\sim\mathcal{P}\left(\beta Y_{t-1}\right)\\
+            Y_{t}|Z_{t}&\sim\gamma\left(\delta+Z_{t},c\right)
 
         Parameters
         ----------
@@ -305,7 +318,7 @@ class ARG(GMM):
         for i in range(1, nobs):
             df = self.param.delta * 2
             nc = self.param.rho * vol[:, i-1]
-            vol[:, i] = st.ncx2.rvs(df, nc, size=nsim)
+            vol[:, i] = scs.ncx2.rvs(df, nc, size=nsim)
         return vol * self.param.scale / 2
 
     def vsim_last(self, **args):
@@ -360,7 +373,7 @@ class ARG(GMM):
             raise ValueError("No data is given!")
 
     def estimate_mle(self, param_start=ARGparams()):
-        """Estimate model parameters.
+        """Estimate model parameters via Maximum Likelihood.
 
         Returns
         -------

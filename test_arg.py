@@ -9,7 +9,7 @@ import unittest as ut
 import numpy as np
 import scipy.optimize as so
 
-from ARG import ARGparams, ARG, likelihood_vol
+from argamma import ARGparams, ARG, likelihood_vol
 from MyGMM import Results
 
 __author__ = "Stanislav Khrapov"
@@ -185,7 +185,6 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(results, Results)
         self.assertIsInstance(results.theta, np.ndarray)
         self.assertEqual(results.theta.shape[0], param_true.theta.shape[0])
-
 
 
 if __name__ == '__main__':
