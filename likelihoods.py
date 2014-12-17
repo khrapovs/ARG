@@ -7,7 +7,7 @@
 import numpy as np
 import scipy.stats as st
 
-from argamma.argparams import ARGparams
+from argparams import ARGparams
 
 
 def likelihood_vol(theta, vol):

@@ -9,7 +9,8 @@ import unittest as ut
 import numpy as np
 import scipy.optimize as so
 
-from argamma import ARGparams, ARG, likelihood_vol
+from argamma import ARG, likelihood_vol
+from argparams import ARGparams
 from MyGMM import Results
 
 __author__ = "Stanislav Khrapov"
