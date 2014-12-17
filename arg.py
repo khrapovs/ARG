@@ -29,8 +29,8 @@ import scipy.stats as st
 from scipy.optimize import minimize
 from statsmodels.tsa.tsatools import lagmat
 
-from ARG.argparams import ARGparams
-from ARG.likelihoods import likelihood_vol
+from argamma.argparams import ARGparams
+from argamma.likelihoods import likelihood_vol
 from MyGMM import GMM
 
 __author__ = "Stanislav Khrapov"
