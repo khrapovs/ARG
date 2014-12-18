@@ -9,10 +9,10 @@
 Module documentation
 --------------------
 
-.. automodule:: argamma.argamma.arg
+.. automodule:: argamma.arg
 
 Class documentation
 -------------------
 
-.. autoclass:: argamma.argamma.arg.ARG
+.. autoclass:: argamma.ARG
 	:members: afun, bfun, cfun, vsim, vsim2, load_data, estimate_mle, momcond
