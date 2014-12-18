@@ -29,7 +29,7 @@ import scipy.stats as scs
 from scipy.optimize import minimize
 from statsmodels.tsa.tsatools import lagmat
 
-from argparams import ARGparams
+from argamma import ARGparams
 from argamma.likelihoods import likelihood_vol
 from MyGMM import GMM
 
