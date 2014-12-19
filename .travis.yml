@@ -17,10 +17,10 @@ before_install:
   - sudo ln -s /run/shm /dev/shm
 # Install packages
 install:
-  - wget https://github.com/khrapovs/MyGMM/archive/master.zip -P ~
+  - wget https://github.com/khrapovs/mygmm/archive/master.zip -P ~
   - unzip ~/master.zip -d ~/
-  - mv ~/MyGMM-master/ ~/MyGMM/
-  - export PATH=$HOME:$PATH
+  - mv ~/mygmm-master/ ~/mygmm/
+  - export PATH=$HOME/mygmm/:$PATH
   - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib nose seaborn statsmodels
 
 # Run test

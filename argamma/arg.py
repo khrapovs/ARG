@@ -38,6 +38,7 @@ __status__ = "Development"
 
 __all__ = ['ARG']
 
+
 class ARG(GMM):
 
     r"""Class for ARG model.
