@@ -19,8 +19,7 @@ before_install:
 install:
   - wget https://github.com/khrapovs/mygmm/archive/master.zip -P ~
   - unzip ~/master.zip -d ~/
-  - mv ~/mygmm-master/ ~/mygmm/
-  - export PATH=$HOME/mygmm/:$PATH
+  - export PYTHONPATH=$PYTHONPATH:~/mygmm-master/
   - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib nose seaborn statsmodels
 
 # Run test
