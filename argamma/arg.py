@@ -30,7 +30,7 @@ from scipy.optimize import minimize
 from statsmodels.tsa.tsatools import lagmat
 
 from . import ARGparams, likelihood_vol
-from mygmm.mygmm import GMM
+from mygmm import GMM
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
