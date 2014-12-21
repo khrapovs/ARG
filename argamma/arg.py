@@ -30,7 +30,7 @@ from scipy.optimize import minimize
 from statsmodels.tsa.tsatools import lagmat
 
 from . import ARGparams, likelihood_vol
-from mygmm import GMM
+from mygmm.mygmm import GMM
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -39,7 +39,7 @@ __status__ = "Development"
 __all__ = ['ARG']
 
 
-class ARG(GMM):
+class ARG(object):
 
     r"""Class for ARG model.
 
@@ -465,7 +465,14 @@ class ARG(GMM):
 
         return moment, dmoment
 
+    def gmmest(self, param_start=ARGparams(), **kwargs):
+        """Estimate model parameters using GMM.
+
+        """
+        estimator = GMM(self.momcond)
+        return estimator.gmmest(param_start, **kwargs)
+
+
 
 if __name__ == '__main__':
-    from usage_example import play_with_arg, estimate_mle
-    estimate_mle()
+    pass

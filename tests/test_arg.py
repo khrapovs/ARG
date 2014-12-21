@@ -10,7 +10,7 @@ import numpy as np
 import scipy.optimize as so
 
 from argamma import ARG, likelihood_vol, ARGparams
-from mygmm import Results
+from mygmm.mygmm import Results
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"

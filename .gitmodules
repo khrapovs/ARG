@@ -1,0 +1,3 @@
+[submodule "mygmm"]
+	path = mygmm
+	url = git@github.com:khrapovs/mygmm.git
