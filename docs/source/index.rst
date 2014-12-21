@@ -6,13 +6,10 @@
 .. toctree::
    :maxdepth: 1
 
-Module documentation
---------------------
-
 .. automodule:: argamma.arg
 
 Class documentation
 -------------------
 
-.. autoclass:: argamma.ARG
+.. autoclass:: argamma.arg.ARG
 	:members: afun, bfun, cfun, vsim, vsim2, load_data, estimate_mle, momcond

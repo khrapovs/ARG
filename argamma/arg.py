@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-r"""ARG model class
+r"""
+ARG model
+=========
 
 References
 ----------
@@ -471,7 +473,6 @@ class ARG(object):
         """
         estimator = GMM(self.momcond)
         return estimator.gmmest(param_start, **kwargs)
-
 
 
 if __name__ == '__main__':
