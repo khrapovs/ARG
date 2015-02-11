@@ -10,7 +10,7 @@ References
 .. [1] Stanislav Khrapov and Eric Renault (2014)
     "Affine Option Pricing Model in Discrete Time",
     working paper, New Economic School.
-    <https://sites.google.com/site/khrapovs/research/Renault-Khrapov-2012-Affine-Option-Pricing.pdf>
+    <http://goo.gl/yRVsZp>
 
 .. [2] Christian Gourieroux and Joann Jasiak (2006)
     "Autoregressive Gamma Processes",
@@ -31,7 +31,7 @@ import scipy.stats as scs
 from scipy.optimize import minimize
 from statsmodels.tsa.tsatools import lagmat
 
-from . import ARGparams, likelihood_vol
+from . import ARGparams, likelihood_vol, likelihood_vol_grad
 from mygmm import GMM
 
 __author__ = "Stanislav Khrapov"
@@ -84,8 +84,13 @@ class ARG(object):
 
     """
 
-    def __init__(self, param=ARGparams()):
+    def __init__(self, param=None):
         """Initialize class instance.
+
+        Parameters
+        ----------
+        param : ARGparams instance
+            Parameter object
 
         """
         super(ARG, self).__init__()
@@ -267,7 +272,7 @@ class ARG(object):
         plt.tight_layout()
         plt.show()
 
-    def vsim(self, nsim=1, nobs=int(1e2), param=ARGparams()):
+    def vsim(self, nsim=1, nobs=int(1e2), param=None):
         r"""Simulate ARG(1) process.
 
         .. math::
@@ -298,7 +303,7 @@ class ARG(object):
                 * np.random.gamma(self.param.delta + temp)
         return vol
 
-    def vsim2(self, nsim=1, nobs=int(1e2), param=ARGparams()):
+    def vsim2(self, nsim=1, nobs=int(1e2), param=None):
         """Simulate ARG(1) process.
 
         Parameters
@@ -375,7 +380,7 @@ class ARG(object):
         else:
             raise ValueError("No data is given!")
 
-    def estimate_mle(self, param_start=ARGparams()):
+    def estimate_mle(self, param_start=None):
         """Estimate model parameters via Maximum Likelihood.
 
         Returns
@@ -388,6 +393,7 @@ class ARG(object):
         options = {'disp': False, 'maxiter': int(1e6)}
         results = minimize(likelihood_vol, param_start.theta,
                            args=(self.vol, ), method='L-BFGS-B',
+                           jac=likelihood_vol_grad,
                            options=options)
         param_final = ARGparams(theta=results.x)
         return param_final, results

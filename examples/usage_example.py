@@ -7,7 +7,7 @@ from __future__ import print_function, division
 
 import numpy as np
 
-from argamma.argamma import ARG, ARGparams
+from argamma import ARG, ARGparams
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -62,5 +62,5 @@ def estimate_gmm():
 
 if __name__ == '__main__':
     #play_with_arg()
-    #estimate_mle()
-    estimate_gmm()
+    estimate_mle()
+    #estimate_gmm()

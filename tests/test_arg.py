@@ -9,7 +9,7 @@ import unittest as ut
 import numpy as np
 import scipy.optimize as so
 
-from argamma import ARG, likelihood_vol, ARGparams
+from argamma import ARG, ARGparams, likelihood_vol, likelihood_vol_grad
 from mygmm import Results
 
 __author__ = "Stanislav Khrapov"
@@ -51,7 +51,7 @@ class ARGTestCase(ut.TestCase):
     def test_uncond_moments(self):
         """Test unconditional moments of the ARG model."""
 
-        argmodel = ARG()
+        argmodel = ARG(ARGparams())
 
         self.assertIsInstance(argmodel.umean(), float)
         self.assertIsInstance(argmodel.uvar(), float)
@@ -63,7 +63,7 @@ class ARGTestCase(ut.TestCase):
     def test_abc_functions(self):
         """Test functions a, b, c of ARG model."""
 
-        argmodel = ARG()
+        argmodel = ARG(ARGparams())
         for i in [1, 10]:
             uarg = np.linspace(-50, 100, 10)
 
@@ -78,7 +78,7 @@ class ARGTestCase(ut.TestCase):
     def test_abc_derivatives(self):
         """Test derivatives of functions a, b, c of ARG model."""
 
-        argmodel = ARG()
+        argmodel = ARG(ARGparams())
         for i in [1, 10]:
             uarg = np.linspace(-50, 100, 10)
 
@@ -91,7 +91,7 @@ class ARGTestCase(ut.TestCase):
     def test_simulations(self):
         """Test simulation of ARG model."""
 
-        argmodel = ARG()
+        argmodel = ARG(ARGparams())
 
         self.assertIsInstance(argmodel.vsim(), np.ndarray)
         self.assertIsInstance(argmodel.vsim2(), np.ndarray)
@@ -121,6 +121,8 @@ class ARGTestCase(ut.TestCase):
         vol = np.array([1, 2, 3])
 
         self.assertIsInstance(likelihood_vol(theta, vol), float)
+        self.assertIsInstance(likelihood_vol_grad(theta, vol), np.ndarray)
+        self.assertEqual(likelihood_vol_grad(theta, vol).shape, theta.shape)
 
         vol = np.array([1])
 
@@ -129,7 +131,7 @@ class ARGTestCase(ut.TestCase):
     def test_load_data(self):
         """Test load data method."""
         vol = np.array([1, 2, 3])
-        argmodel = ARG()
+        argmodel = ARG(ARGparams())
         self.assertRaises(ValueError, lambda: argmodel.load_data())
         argmodel.load_data(vol=vol)
 
@@ -153,7 +155,7 @@ class ARGTestCase(ut.TestCase):
         """Test moment condition method."""
         theta = np.array([1, 1, 1])
         uarg = np.array([-1, 0, 1])
-        argmodel = ARG()
+        argmodel = ARG(ARGparams())
         self.assertRaises(ValueError, lambda: argmodel.momcond(theta))
         fun = lambda: argmodel.momcond(theta, uarg=uarg)
         self.assertRaises(ValueError, fun)

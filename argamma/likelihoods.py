@@ -6,10 +6,11 @@
 
 import numpy as np
 import scipy.stats as st
+import numdifftools as nd
 
 from . import ARGparams
 
-__all__ = ['likelihood_vol']
+__all__ = ['likelihood_vol', 'likelihood_vol_grad']
 
 
 def likelihood_vol(theta, vol):
@@ -17,7 +18,7 @@ def likelihood_vol(theta, vol):
 
     Parameters
     ----------
-    theta : list
+    theta : array_like
         Model parameters. [scale, rho, delta]
     vol : (nobs, ) array
         Observable time series
@@ -36,3 +37,22 @@ def likelihood_vol(theta, vol):
     nonc = param.rho * vol[:-1] / param.scale * 2
     logf = st.ncx2.logpdf(vol[1:], degf, nonc, scale=param.scale/2)
     return -logf[~np.isnan(logf)].mean()
+
+
+def likelihood_vol_grad(theta, vol):
+    """Log-likelihood for ARG(1) model.
+
+    Parameters
+    ----------
+    theta : list
+        Model parameters. [scale, rho, delta]
+    vol : (nobs, ) array
+        Observable time series
+
+    Returns
+    -------
+    array
+        Gradient of the log-likelihood function
+
+    """
+    return nd.Gradient(lambda theta: likelihood_vol(theta, vol))(theta)
