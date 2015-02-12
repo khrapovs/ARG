@@ -18,7 +18,7 @@ def play_with_arg():
     param = ARGparams()
     print(param)
 
-    argmodel = ARG()
+    argmodel = ARG(param=param)
     uarg = np.linspace(-50, 100, 100)
     argmodel.plot_abc(uarg)
 
@@ -54,18 +54,19 @@ def estimate_gmm():
     vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
     argmodel.load_data(vol=vol)
     uarg = np.linspace(.1, 10, 3) * 1j
-    results = argmodel.gmmest(param_true.theta, uarg=uarg, zlag=2)
+    results = argmodel.estimate_gmm(param_true.theta_vol, uarg=uarg, zlag=2)
 
     print('True parameter:', param_true)
-    print('Final parameter: ', ARGparams(theta=results.theta))
+    print('Final parameter: ', ARGparams(theta_vol=results.theta))
     print('Std: ', results.tstat)
     results.print_results()
 
 
 if __name__ == '__main__':
+
     #play_with_arg()
     param_final, results = estimate_mle()
     print(results.x)
     print(results.std_theta)
     print(results.tstat)
-    #estimate_gmm()
+    estimate_gmm()

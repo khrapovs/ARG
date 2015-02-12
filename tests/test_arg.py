@@ -35,19 +35,19 @@ class ARGTestCase(ut.TestCase):
         theta_true = [scale, rho, delta]
         param = ARGparams(scale=scale, rho=rho, delta=delta)
 
-        self.assertIsInstance(param.theta, np.ndarray)
-        np.testing.assert_array_equal(param.theta, theta_true)
+        self.assertIsInstance(param.theta_vol, np.ndarray)
+        np.testing.assert_array_equal(param.theta_vol, theta_true)
 
         scale, rho, delta = 1, 2, 3
         theta_true = [scale, rho, delta]
-        param = ARGparams(theta=theta_true)
+        param = ARGparams(theta_vol=theta_true)
 
         self.assertEqual(param.scale, scale)
         self.assertEqual(param.rho, rho)
         self.assertEqual(param.delta, delta)
 
         theta = [0, 0]
-        self.assertRaises(AssertionError, lambda: ARGparams(theta=theta))
+        self.assertRaises(AssertionError, lambda: ARGparams(theta_vol=theta))
 
     def test_uncond_moments(self):
         """Test unconditional moments of the ARG model."""
@@ -150,17 +150,17 @@ class ARGTestCase(ut.TestCase):
         vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
         argmodel.load_data(vol=vol)
         param_final, results = argmodel.estimate_mle(param_start=param_true)
-        ratio = param_true.theta / param_final.theta
+        ratio = param_true.theta_vol / param_final.theta_vol
 
         self.assertIsInstance(param_final, ARGparams)
         self.assertIsInstance(results, so.optimize.OptimizeResult)
         np.testing.assert_allclose(ratio, np.ones_like(ratio), rtol=1e1)
 
         self.assertIsInstance(results.std_theta, np.ndarray)
-        self.assertEqual(results.std_theta.shape, param_true.theta.shape)
+        self.assertEqual(results.std_theta.shape, param_true.theta_vol.shape)
 
         self.assertIsInstance(results.tstat, np.ndarray)
-        self.assertEqual(results.tstat.shape, param_true.theta.shape)
+        self.assertEqual(results.tstat.shape, param_true.theta_vol.shape)
 
     def test_momcond(self):
         """Test moment condition method."""
@@ -177,7 +177,7 @@ class ARGTestCase(ut.TestCase):
         argmodel.load_data(vol=vol)
         moment, dmoment = argmodel.momcond(theta, uarg=uarg, zlag=instrlag)
 
-        np.testing.assert_array_equal(argmodel.param.theta, theta)
+        np.testing.assert_array_equal(argmodel.param.theta_vol, theta)
 
         momshape = (vol.shape[0]-instrlag, 2*uarg.shape[0]*instrlag)
         dmomshape = (2*uarg.shape[0]*instrlag, theta.shape[0])
@@ -193,11 +193,12 @@ class ARGTestCase(ut.TestCase):
         vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
         argmodel.load_data(vol=vol)
         uarg = np.linspace(.1, 10, 3) * 1j
-        results = argmodel.gmmest(param_true.theta, uarg=uarg, zlag=2)
+        results = argmodel.estimate_gmm(param_true.theta_vol,
+                                        uarg=uarg, zlag=2)
 
         self.assertIsInstance(results, Results)
         self.assertIsInstance(results.theta, np.ndarray)
-        self.assertEqual(results.theta.shape[0], param_true.theta.shape[0])
+        self.assertEqual(results.theta.shape[0], param_true.theta_vol.shape[0])
 
 
 if __name__ == '__main__':

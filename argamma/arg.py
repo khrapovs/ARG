@@ -25,6 +25,7 @@ References
 from __future__ import print_function, division
 
 import numpy as np
+import sympy as sp
 import matplotlib.pylab as plt
 import seaborn as sns
 import scipy.stats as scs
@@ -275,7 +276,7 @@ class ARG(object):
         plt.show()
 
     def vsim(self, nsim=1, nobs=int(1e2), param=None):
-        r"""Simulate ARG(1) process.
+        r"""Simulate ARG(1) process for volatility.
 
         .. math::
 
@@ -306,7 +307,7 @@ class ARG(object):
         return vol
 
     def vsim2(self, nsim=1, nobs=int(1e2), param=None):
-        """Simulate ARG(1) process.
+        """Simulate ARG(1) process for volatility.
 
         Parameters
         ----------
@@ -330,6 +331,56 @@ class ARG(object):
             nc = self.param.rho * vol[:, i-1]
             vol[:, i] = scs.ncx2.rvs(df, nc, size=nsim)
         return vol * self.param.scale / 2
+
+    def rsim(self, vol, param=None):
+        """Simulate returns given ARG(1) process for volatility.
+
+        Parameters
+        ----------
+        vol : (nsim, nobs) array
+            Volatility paths
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        (nsim, nobs) array
+            Simulated data
+
+        """
+        center = self.param.phi / (self.param.scale * (1 + self.param.rho))**.5
+
+        alpha = lambda v: (((self.param.theta2-.5) * (1-self.param.phi**2) \
+            + center) * v - .5 * v**2 * (1-self.param.phi**2) )
+        # Risk-neutral parameters
+        factor = 1/(1 + self.param.scale \
+            * (self.param.theta1 + alpha(self.param.theta2)))
+        scale_star = self.param.scale * factor
+        betap_star = self.param.beta * scale_star / self.param.scale
+        rho_star = scale_star * betap_star
+
+        a_star = lambda u: rho_star * u / (1 + scale_star * u)
+        b_star = lambda u: self.param.delta * sp.log(1 + scale_star * u)
+
+        beta  = lambda v: v * a_star(- center)
+        gamma = lambda v: v * b_star(- center)
+
+        u = sp.Symbol('u')
+        A1 = float(alpha(u).diff(u, 1).subs(u, 0))
+        B1 = float(beta(u).diff(u, 1).subs(u, 0))
+        C1 = float(gamma(u).diff(u, 1).subs(u, 0))
+        A2 = float(-alpha(u).diff(u, 2).subs(u, 0))
+        B2 = float(-beta(u).diff(u, 2).subs(u, 0))
+        C2 = float(-gamma(u).diff(u, 2).subs(u, 0))
+
+        # conditional mean and variance of return
+        Er = (A1 * vol[:, 1:] + B1 * vol[:, :-1] + C1)
+        Vr = (A2 * vol[:, 1:] + B2 * vol[:, :-1] + C2)
+
+        # simulate returns
+        ret = np.array(Er + Vr**.5 * np.random.normal(size=vol[:, 1:].shape))
+        return np.hstack((0, ret))
+
 
     def vsim_last(self, **args):
         """The last observation in the series of simulations.
@@ -400,14 +451,14 @@ class ARG(object):
         """
         # Optimization options
         options = {'disp': False, 'maxiter': int(1e6)}
-        results = minimize(likelihood_vol, param_start.theta,
+        results = minimize(likelihood_vol, param_start.theta_vol,
                            args=(self.vol, ), method='L-BFGS-B',
                            jac=likelihood_vol_grad,
                            options=options)
         hess = likelihood_vol_hess(results.x, self.vol)
         results.std_theta = np.diag(np.linalg.inv(hess) / len(self.vol))**.5
         results.tstat = results.x / results.std_theta
-        param_final = ARGparams(theta=results.x)
+        param_final = ARGparams(theta_vol=results.x)
         return param_final, results
 
     def momcond(self, theta, uarg=None, zlag=1):
@@ -455,7 +506,7 @@ class ARG(object):
             dmoment = np.ones((nmoms, nparams)) * 1e10
             return moment, dmoment
         # Change class attribute with the current theta
-        self.param = ARGparams(theta=theta)
+        self.param = ARGparams(theta_vol=theta)
 
         # Must be (nobs, nu) array
         exparg = - prevvol * self.afun(uarg)

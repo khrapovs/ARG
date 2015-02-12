@@ -26,25 +26,57 @@ class ARGparams(object):
     AssertionError
 
     """
-    def __init__(self, scale=.001, rho=.9, delta=1.1, theta=None):
+    def __init__(self, scale=.001, rho=.9, delta=1.1,
+                 tau1=.5, tau2=1, phi=-.5, price1=-10, price2=10,
+                 theta_vol=None, theta_ret=None):
         """Initialize the class instance.
 
+        Parameters
+        ----------
+        scale : float
+            Scale of the volatility ARG(1) process
+        rho : float
+            Persistence of the volatility ARG(1) process
+        delta : float
+            Overdispersion of the volatility ARG(1) process
+        phi : float
+            Correlation between return and volatility
+        price1 : float
+            Volatiltiy risk price
+        price2 : float
+            Equity risk price
+        theta_vol : array
+            Parameters of the volatility model
+        theta_ret : array
+            Parameters of the return model
+
         """
-        if not theta is None:
-            assert len(theta) == 3, "Wrong number of parameters in theta!"
-            [scale, rho, delta] = theta
+        if not theta_vol is None:
+            assert len(theta_vol) == 3, \
+                "Wrong number of parameters in theta_vol!"
+            [scale, rho, delta] = theta_vol
+        # Volatililty parameters
         self.scale = scale
         self.rho = rho
         self.delta = delta
         assert scale > 0, "Scale must be greater than zero!"
         self.beta = self.rho / self.scale
-        self.theta = np.array([scale, rho, delta])
+        # Parameters of the volatility model
+        self.theta_vol = np.array([scale, rho, delta])
 
-#    def __repr__(self):
-#         """This is what is shown when you interactively explore the instance.
-#
-#         """
-#         return self.__str__()
+        if not theta_ret is None:
+            assert len(theta_ret) == 3, \
+                "Wrong number of parameters in theta_vol!"
+            [phi, price2] = theta_ret
+        # Return parameters
+        # Correlation between return and volatility
+        self.phi = phi
+        # Volatility risk price
+        self.price1 = price1
+        # Equity risk price
+        self.price2 = price2
+        # Parameters of the return model
+        self.theta_ret = np.array([phi, price2])
 
     def __str__(self):
         """This is what is shown when you print() the instance.
