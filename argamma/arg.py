@@ -31,7 +31,9 @@ import scipy.stats as scs
 from scipy.optimize import minimize
 from statsmodels.tsa.tsatools import lagmat
 
-from . import ARGparams, likelihood_vol, likelihood_vol_grad
+from .argparams import ARGparams
+from .likelihoods import (likelihood_vol, likelihood_vol_grad,
+                          likelihood_vol_hess)
 from mygmm import GMM
 
 __author__ = "Stanislav Khrapov"
@@ -395,6 +397,9 @@ class ARG(object):
                            args=(self.vol, ), method='L-BFGS-B',
                            jac=likelihood_vol_grad,
                            options=options)
+        hess = likelihood_vol_hess(results.x, self.vol)
+        results.std_theta = np.diag(np.linalg.inv(hess) / len(self.vol))**.5
+        results.tstat = results.x / results.std_theta
         param_final = ARGparams(theta=results.x)
         return param_final, results
 

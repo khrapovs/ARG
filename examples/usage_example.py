@@ -43,6 +43,8 @@ def estimate_mle():
     print('Final parameter: ', param_final)
     print(type(results))
 
+    return param_final, results
+
 
 def estimate_gmm():
     """Try GMM estimator."""
@@ -62,5 +64,8 @@ def estimate_gmm():
 
 if __name__ == '__main__':
     #play_with_arg()
-    estimate_mle()
+    param_final, results = estimate_mle()
+    print(results.x)
+    print(results.std_theta)
+    print(results.tstat)
     #estimate_gmm()

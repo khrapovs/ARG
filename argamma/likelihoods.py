@@ -8,9 +8,9 @@ import numpy as np
 import scipy.stats as st
 import numdifftools as nd
 
-from . import ARGparams
+from .argparams import ARGparams
 
-__all__ = ['likelihood_vol', 'likelihood_vol_grad']
+__all__ = ['likelihood_vol', 'likelihood_vol_grad', 'likelihood_vol_hess']
 
 
 def likelihood_vol(theta, vol):
@@ -40,7 +40,7 @@ def likelihood_vol(theta, vol):
 
 
 def likelihood_vol_grad(theta, vol):
-    """Log-likelihood for ARG(1) model.
+    """Gradient of the log-likelihood for ARG(1) model.
 
     Parameters
     ----------
@@ -56,3 +56,22 @@ def likelihood_vol_grad(theta, vol):
 
     """
     return nd.Gradient(lambda theta: likelihood_vol(theta, vol))(theta)
+
+
+def likelihood_vol_hess(theta, vol):
+    """Hessian for the log-likelihood for ARG(1) model.
+
+    Parameters
+    ----------
+    theta : list
+        Model parameters. [scale, rho, delta]
+    vol : (nobs, ) array
+        Observable time series
+
+    Returns
+    -------
+    array
+        Hessian of the log-likelihood function
+
+    """
+    return nd.Hessian(lambda theta: likelihood_vol(theta, vol))(theta)

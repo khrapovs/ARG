@@ -9,7 +9,8 @@ import unittest as ut
 import numpy as np
 import scipy.optimize as so
 
-from argamma import ARG, ARGparams, likelihood_vol, likelihood_vol_grad
+from argamma import (ARG, ARGparams,
+                     likelihood_vol, likelihood_vol_grad, likelihood_vol_hess)
 from mygmm import Results
 
 __author__ = "Stanislav Khrapov"
@@ -122,7 +123,11 @@ class ARGTestCase(ut.TestCase):
 
         self.assertIsInstance(likelihood_vol(theta, vol), float)
         self.assertIsInstance(likelihood_vol_grad(theta, vol), np.ndarray)
+        self.assertIsInstance(likelihood_vol_hess(theta, vol), np.ndarray)
+
         self.assertEqual(likelihood_vol_grad(theta, vol).shape, theta.shape)
+        self.assertEqual(likelihood_vol_hess(theta, vol).shape,
+                         (theta.shape[0], theta.shape[0]))
 
         vol = np.array([1])
 
@@ -150,6 +155,12 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(param_final, ARGparams)
         self.assertIsInstance(results, so.optimize.OptimizeResult)
         np.testing.assert_allclose(ratio, np.ones_like(ratio), rtol=1e1)
+
+        self.assertIsInstance(results.std_theta, np.ndarray)
+        self.assertEqual(results.std_theta.shape, param_true.theta.shape)
+
+        self.assertIsInstance(results.tstat, np.ndarray)
+        self.assertEqual(results.tstat.shape, param_true.theta.shape)
 
     def test_momcond(self):
         """Test moment condition method."""
