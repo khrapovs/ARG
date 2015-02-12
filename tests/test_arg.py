@@ -21,8 +21,8 @@ __status__ = "Development"
 class ARGTestCase(ut.TestCase):
     """Test ARG, ARGparams model classes."""
 
-    def test_param_class(self):
-        """Test parameter class."""
+    def test_param_class_vol(self):
+        """Test parameter class for volatility parameters."""
 
         param = ARGparams()
 
@@ -48,6 +48,29 @@ class ARGTestCase(ut.TestCase):
 
         theta = [0, 0]
         self.assertRaises(AssertionError, lambda: ARGparams(theta_vol=theta))
+
+    def test_param_class_ret(self):
+        """Test parameter class for return parameters."""
+
+        param = ARGparams()
+
+        self.assertIsInstance(param.phi, float)
+        self.assertIsInstance(param.price_ret, float)
+        self.assertIsInstance(param.price_vol, float)
+
+        phi, price_vol, price_ret = -.5, -5, 5
+        theta_true = [phi, price_ret]
+        param = ARGparams(phi=phi, price_ret=price_ret)
+
+        self.assertIsInstance(param.theta_ret, np.ndarray)
+        np.testing.assert_array_equal(param.theta_ret, theta_true)
+
+        phi, price_vol, price_ret = 1, 2, 3
+        theta_true = [phi, price_ret]
+        param = ARGparams(theta_ret=theta_true)
+
+        self.assertEqual(param.phi, phi)
+        self.assertEqual(param.price_ret, price_ret)
 
     def test_uncond_moments(self):
         """Test unconditional moments of the ARG model."""

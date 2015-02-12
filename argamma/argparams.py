@@ -27,7 +27,8 @@ class ARGparams(object):
 
     """
     def __init__(self, scale=.001, rho=.9, delta=1.1,
-                 tau1=.5, tau2=1, phi=-.5, price1=-10, price2=10,
+                 tau1=.5, tau2=1, phi=-.5,
+                 price_vol=-10., price_ret=10.,
                  theta_vol=None, theta_ret=None):
         """Initialize the class instance.
 
@@ -65,18 +66,18 @@ class ARGparams(object):
         self.theta_vol = np.array([scale, rho, delta])
 
         if not theta_ret is None:
-            assert len(theta_ret) == 3, \
+            assert len(theta_ret) == 2, \
                 "Wrong number of parameters in theta_vol!"
-            [phi, price2] = theta_ret
+            [phi, price_ret] = theta_ret
         # Return parameters
         # Correlation between return and volatility
         self.phi = phi
         # Volatility risk price
-        self.price1 = price1
+        self.price_vol = price_vol
         # Equity risk price
-        self.price2 = price2
+        self.price_ret = price_ret
         # Parameters of the return model
-        self.theta_ret = np.array([phi, price2])
+        self.theta_ret = np.array([phi, price_ret])
 
     def __str__(self):
         """This is what is shown when you print() the instance.
