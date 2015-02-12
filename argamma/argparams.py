@@ -40,11 +40,11 @@ class ARGparams(object):
         self.beta = self.rho / self.scale
         self.theta = np.array([scale, rho, delta])
 
-    def __repr__(self):
-         """This is what is shown when you interactively explore the instance.
-
-         """
-         return self.__str__()
+#    def __repr__(self):
+#         """This is what is shown when you interactively explore the instance.
+#
+#         """
+#         return self.__str__()
 
     def __str__(self):
         """This is what is shown when you print() the instance.

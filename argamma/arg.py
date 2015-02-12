@@ -385,10 +385,17 @@ class ARG(object):
     def estimate_mle(self, param_start=None):
         """Estimate model parameters via Maximum Likelihood.
 
+        Parameters
+        ----------
+        param_start : ARGparams instance, optional
+            Starting value for optimization
+
         Returns
         -------
         param_final : ARGparams instance
             Estimated parameters
+        results : OptimizeResult instance
+            Optimization output
 
         """
         # Optimization options
@@ -478,8 +485,22 @@ class ARG(object):
 
         return moment, dmoment
 
-    def gmmest(self, param_start=ARGparams(), **kwargs):
+    def estimate_gmm(self, param_start=None, **kwargs):
         """Estimate model parameters using GMM.
+
+        Parameters
+        ----------
+        param_start : ARGparams instance
+            Starting value for optimization
+        uarg : array
+            Grid to evaluate a and b functions
+        zlag : int, optional
+            Number of lags in the instrument. Default is 1
+
+        Returns
+        -------
+        mygmm.Results instance
+            GMM estimation results
 
         """
         estimator = GMM(self.momcond)
