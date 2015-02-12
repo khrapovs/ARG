@@ -75,9 +75,11 @@ class ARG(object):
     plot_abc
         Vizualize functions a, b, and c
     vsim
-        Simulate ARG(1) process
+        Simulate ARG(1) volatility process
     vsim2
-        Simulate ARG(1) process
+        Simulate ARG(1) volatility process
+    rsim
+        Simulate returns given volatility
     load_data
         Load data to the class
     estimate_mle
@@ -350,11 +352,11 @@ class ARG(object):
         """
         center = self.param.phi / (self.param.scale * (1 + self.param.rho))**.5
 
-        alpha = lambda v: (((self.param.theta2-.5) * (1-self.param.phi**2) \
+        alpha = lambda v: (((self.param.price_ret-.5) * (1-self.param.phi**2) \
             + center) * v - .5 * v**2 * (1-self.param.phi**2) )
         # Risk-neutral parameters
         factor = 1/(1 + self.param.scale \
-            * (self.param.theta1 + alpha(self.param.theta2)))
+            * (self.param.price_vol + alpha(self.param.price_ret)))
         scale_star = self.param.scale * factor
         betap_star = self.param.beta * scale_star / self.param.scale
         rho_star = scale_star * betap_star
@@ -378,8 +380,8 @@ class ARG(object):
         Vr = (A2 * vol[:, 1:] + B2 * vol[:, :-1] + C2)
 
         # simulate returns
-        ret = np.array(Er + Vr**.5 * np.random.normal(size=vol[:, 1:].shape))
-        return np.hstack((0, ret))
+        ret = Er + Vr**.5 * np.random.normal(size=vol[:, 1:].shape)
+        return np.hstack((np.zeros((vol.shape[0], 1)), ret))
 
 
     def vsim_last(self, **args):

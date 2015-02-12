@@ -6,6 +6,8 @@
 from __future__ import print_function, division
 
 import numpy as np
+import matplotlib.pylab as plt
+import seaborn as sns
 
 from argamma import ARG, ARGparams
 
@@ -28,6 +30,32 @@ def play_with_arg():
     print(vol.shape)
 
     argmodel.plot_vlast_density(nsim=1000)
+
+
+def try_simulation():
+
+    rho = .9
+    delta = .75
+    dailymean = .2**2 / 365
+    scale = dailymean * (1 - rho) / delta
+    price_vol, price_ret = -16, .95
+
+    phi = -.9
+
+    param = ARGparams(scale=scale, rho=rho, delta=delta,
+                      phi=phi, price_ret=price_ret)
+    nobs = 500
+    argmodel = ARG(param=param)
+    vol = argmodel.vsim(nsim=1, nobs=nobs)
+    ret = argmodel.rsim(vol)
+
+    plt.figure(figsize=(8, 4))
+    plt.subplot(2, 1, 1)
+    plt.plot(vol.flatten())
+    plt.subplot(2, 1, 2)
+    plt.plot(ret.flatten())
+    plt.show()
+
 
 
 def estimate_mle():
@@ -65,8 +93,9 @@ def estimate_gmm():
 if __name__ == '__main__':
 
     #play_with_arg()
-    param_final, results = estimate_mle()
-    print(results.x)
-    print(results.std_theta)
-    print(results.tstat)
-    estimate_gmm()
+#    param_final, results = estimate_mle()
+#    print(results.x)
+#    print(results.std_theta)
+#    print(results.tstat)
+#    estimate_gmm()
+    try_simulation()

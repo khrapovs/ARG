@@ -119,6 +119,7 @@ class ARGTestCase(ut.TestCase):
 
         self.assertIsInstance(argmodel.vsim(), np.ndarray)
         self.assertIsInstance(argmodel.vsim2(), np.ndarray)
+        self.assertIsInstance(argmodel.rsim(argmodel.vsim2()), np.ndarray)
 
         shapes = []
         nsim, nobs = 1, 1
@@ -132,7 +133,10 @@ class ARGTestCase(ut.TestCase):
             nsim, nobs = shape
 
             self.assertEqual(argmodel.vsim(nsim=nsim, nobs=nobs).shape, shape)
-            self.assertEqual(argmodel.vsim2(nsim=nsim, nobs=nobs).shape, shape)
+            vol = argmodel.vsim2(nsim=nsim, nobs=nobs)
+            self.assertEqual(vol.shape, shape)
+            self.assertEqual(argmodel.rsim(vol=vol).shape, shape)
+
             self.assertEqual(argmodel.vsim_last(nsim=nsim, nobs=nobs).shape,
                              (nsim, ))
             self.assertGreater(argmodel.vsim(nsim=nsim, nobs=nobs).min(), 0)

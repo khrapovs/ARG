@@ -19,7 +19,11 @@ class ARGparams(object):
     rho : float
     delta : float
     beta : float
-    theta : array
+    phi : float
+    price_vol : float
+    price_ret : float
+    theta_vol : array
+    theta_ret : array
 
     Raises
     ------
@@ -41,10 +45,10 @@ class ARGparams(object):
         delta : float
             Overdispersion of the volatility ARG(1) process
         phi : float
-            Correlation between return and volatility
-        price1 : float
+            Correlation between return and volatility (leverage)
+        price_vol : float
             Volatiltiy risk price
-        price2 : float
+        price_ret : float
             Equity risk price
         theta_vol : array
             Parameters of the volatility model
@@ -70,7 +74,7 @@ class ARGparams(object):
                 "Wrong number of parameters in theta_vol!"
             [phi, price_ret] = theta_ret
         # Return parameters
-        # Correlation between return and volatility
+        # Correlation between return and volatility (leverage)
         self.phi = phi
         # Volatility risk price
         self.price_vol = price_vol
