@@ -30,11 +30,12 @@ import matplotlib.pylab as plt
 import seaborn as sns
 import scipy.stats as scs
 from scipy.optimize import minimize
+import numdifftools as nd
+
 from statsmodels.tsa.tsatools import lagmat
 
 from .argparams import ARGparams
-from .likelihoods import (likelihood_vol, likelihood_vol_grad,
-                          likelihood_vol_hess)
+from .likelihoods import likelihood_vol, likelihood_ret
 from mygmm import GMM
 
 __author__ = "Stanislav Khrapov"
@@ -331,15 +332,13 @@ class ARG(object):
             vol[:, i] = scs.ncx2.rvs(df, nc, size=nsim)
         return vol * self.param.scale / 2
 
-    def rsim(self, vol, param=None):
+    def rsim(self, vol=None):
         """Simulate returns given ARG(1) process for volatility.
 
         Parameters
         ----------
         vol : (nsim, nobs) array
             Volatility paths
-        param : ARGparams instance
-            Model parameters
 
         Returns
         -------
@@ -418,7 +417,8 @@ class ARG(object):
         sns.distplot(vol, rug=True, hist=False)
         plt.show()
 
-    def estimate_mle(self, param_start=None, vol=None):
+    def estimate_mle(self, param_start=None, vol=None, ret=None, model=None,
+                     param_vol=None):
         """Estimate model parameters via Maximum Likelihood.
 
         Parameters
@@ -427,6 +427,15 @@ class ARG(object):
             Starting value for optimization
         vol : (nobs, ) array
             Volatility time series
+        ret : (nobs, ) array
+            Return time series
+        model : str
+            Type of model to estimate. Must be in:
+                - 'vol'
+                - 'ret'
+                - 'joint'
+        param_vol : ARGparams instance, optional
+            Parameters of the volatility model
 
         Returns
         -------
@@ -436,16 +445,33 @@ class ARG(object):
             Optimization output
 
         """
+        if param_start is None:
+            param_start = ARGparams()
         # Optimization options
         options = {'disp': False, 'maxiter': int(1e6)}
-        results = minimize(likelihood_vol, param_start.theta_vol,
-                           args=(vol, ), method='L-BFGS-B',
-                           jac=likelihood_vol_grad,
-                           options=options)
-        hess = likelihood_vol_hess(results.x, vol)
-        results.std_theta = np.diag(np.linalg.inv(hess) / len(vol))**.5
+
+        if model == 'vol':
+            likelihood = lambda theta: likelihood_vol(theta, vol=vol)
+            theta_start = param_start.theta_vol
+        elif model == 'ret':
+            likelihood = lambda theta: likelihood_ret(theta, vol=vol, ret=ret,
+                                                      param_vol=param_vol)
+            theta_start = param_start.theta_ret
+
+        jac = nd.Gradient(likelihood)
+        hess = nd.Hessian(likelihood)
+
+        results = minimize(likelihood, theta_start,
+                           method='L-BFGS-B', jac=jac, options=options)
+        hess_mat = hess(results.x)
+        results.std_theta = np.diag(np.linalg.inv(hess_mat) / len(vol))**.5
         results.tstat = results.x / results.std_theta
-        param_final = ARGparams(theta_vol=results.x)
+
+        if model == 'vol':
+            param_final = ARGparams(theta_vol=results.x)
+        elif model == 'ret':
+            param_final = ARGparams(theta_ret=results.x)
+
         return param_final, results
 
     def momcond(self, theta, vol=None, uarg=None, zlag=1):

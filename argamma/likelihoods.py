@@ -7,14 +7,15 @@
 import numpy as np
 import scipy.stats as st
 import numdifftools as nd
+from statsmodels.tsa.tsatools import lagmat
 
 from .argparams import ARGparams
 
-__all__ = ['likelihood_vol', 'likelihood_vol_grad', 'likelihood_vol_hess']
+__all__ = ['likelihood_vol', 'likelihood_ret']
 
 
-def likelihood_vol(theta, vol):
-    """Log-likelihood for ARG(1) model.
+def likelihood_vol(theta, vol=None, **kwargs):
+    """Log-likelihood for ARG(1) volatility model.
 
     Parameters
     ----------
@@ -25,7 +26,7 @@ def likelihood_vol(theta, vol):
 
     Returns
     -------
-    logf : float
+    float
         Value of the log-likelihood function
 
     """
@@ -39,39 +40,42 @@ def likelihood_vol(theta, vol):
     return -logf[~np.isnan(logf)].mean()
 
 
-def likelihood_vol_grad(theta, vol):
-    """Gradient of the log-likelihood for ARG(1) model.
+def likelihood_ret(theta_ret, ret=None, vol=None, param_vol=None):
+    """Log-likelihood for return model.
 
     Parameters
     ----------
-    theta : list
+    theta : array_like
         Model parameters. [scale, rho, delta]
     vol : (nobs, ) array
         Observable time series
+    param_vol : ARGparams instance
+        Parameters of the volatlity model
 
     Returns
     -------
-    array
-        Gradient of the log-likelihood function
+    logf : float
+        Value of the log-likelihood function
 
     """
-    return nd.Gradient(lambda theta: likelihood_vol(theta, vol))(theta)
+    [phi, price_ret] = theta_ret
+    [scale, rho, delta] = param_vol.theta_vol
+    # scale = vol.mean() * (1. - rho) / delta
 
+    a = lambda u: rho * u / (1 + scale * u)
+    b = lambda u: delta * np.log(1 + scale * u)
 
-def likelihood_vol_hess(theta, vol):
-    """Hessian for the log-likelihood for ARG(1) model.
+    k = (scale * (1 + rho))**(-.5)
+    psi = phi * k + (price_ret - .5) * (1 - phi**2)
+    # vol /= (1 - phi**2)
 
-    Parameters
-    ----------
-    theta : list
-        Model parameters. [scale, rho, delta]
-    vol : (nobs, ) array
-        Observable time series
+    vollag = lagmat(vol, 1).flatten()[1:]
+    vol, ret = vol[1:], ret[1:]
 
-    Returns
-    -------
-    array
-        Hessian of the log-likelihood function
+    # tau1 = rho * psi + a(- phi * k)
+    # tau2 = scale * delta * psi + b(- phi * k)
+    # r_mean  = tau1 * vollag + tau2
+    r_mean = psi * vol + a(- phi * k) * vollag + b(- phi * k)
+    r_var = vol * (1 - phi**2)
 
-    """
-    return nd.Hessian(lambda theta: likelihood_vol(theta, vol))(theta)
+    return - st.norm.logpdf(ret, r_mean, np.sqrt(r_var)).mean()

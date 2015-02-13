@@ -10,7 +10,7 @@ import numpy as np
 import scipy.optimize as so
 
 from argamma import (ARG, ARGparams,
-                     likelihood_vol, likelihood_vol_grad, likelihood_vol_hess)
+                     likelihood_vol, likelihood_ret)
 from mygmm import Results
 
 __author__ = "Stanislav Khrapov"
@@ -167,7 +167,7 @@ class ARGTestCase(ut.TestCase):
         nsim, nobs = 1, 500
         vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
         param_final, results = argmodel.estimate_mle(param_start=param_true,
-                                                     vol=vol)
+                                                     vol=vol, model='vol')
         ratio = param_true.theta_vol / param_final.theta_vol
 
         self.assertIsInstance(param_final, ARGparams)

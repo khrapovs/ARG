@@ -39,7 +39,6 @@ def try_simulation():
     dailymean = .2**2 / 365
     scale = dailymean * (1 - rho) / delta
     price_vol, price_ret = -16, .95
-
     phi = -.9
 
     param = ARGparams(scale=scale, rho=rho, delta=delta,
@@ -57,20 +56,48 @@ def try_simulation():
     plt.show()
 
 
-def estimate_mle():
-    """Try MLE estimator."""
+def estimate_mle_vol():
+    """Try MLE estimator with volatility."""
     param_true = ARGparams()
     argmodel = ARG(param=param_true)
     nsim, nobs = 1, 500
     vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
     param_final, results = argmodel.estimate_mle(param_start=param_true,
-                                                 vol=vol)
+                                                 vol=vol, model='vol')
 
     print('True parameter:', param_true)
     print('Final parameter: ', param_final)
     print(type(results))
 
     return param_final, results
+
+
+def estimate_mle_ret():
+    """Try MLE estimator with return."""
+    rho = .9
+    delta = .75
+    dailymean = .2**2 / 365
+    scale = dailymean * (1 - rho) / delta
+    price_vol, price_ret = -16, .95
+    phi = -.9
+
+    param_true = ARGparams(scale=scale, rho=rho, delta=delta,
+                           phi=phi, price_ret=price_ret)
+    argmodel = ARG(param=param_true)
+    nsim, nobs = 1, 500
+    vol = argmodel.vsim(nsim=nsim, nobs=nobs)
+    ret = argmodel.rsim(vol=vol).flatten()
+    vol = vol.flatten()
+
+    pfinal_vol, results_vol = argmodel.estimate_mle(param_start=param_true,
+                                                    vol=vol, model='vol')
+
+    pfinal_ret, results_ret = argmodel.estimate_mle(param_start=param_true,
+                                                    ret=ret, vol=vol,
+                                                    model='ret',
+                                                    param_vol=param_final_vol)
+
+    return pfinal_vol, pfinal_ret, results_vol, results_ret
 
 
 def estimate_gmm():
@@ -92,9 +119,19 @@ def estimate_gmm():
 if __name__ == '__main__':
 
     #play_with_arg()
-    param_final, results = estimate_mle()
-    print(results.x)
-    print(results.std_theta)
-    print(results.tstat)
-    estimate_gmm()
-    try_simulation()
+    #try_simulation()
+
+#    param_final, results = estimate_mle_vol()
+#    print(results.x)
+#    print(results.std_theta)
+#    print(results.tstat)
+
+    pfinal_vol, pfinal_ret, results_vol, results_ret = estimate_mle_ret()
+
+    print(results_vol)
+    print(results_ret)
+    print(param_final_vol.theta_vol)
+    print(param_final_ret.theta_ret)
+
+    #estimate_gmm()
+
