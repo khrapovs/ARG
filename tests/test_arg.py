@@ -9,8 +9,7 @@ import unittest as ut
 import numpy as np
 import scipy.optimize as so
 
-from argamma import (ARG, ARGparams,
-                     likelihood_vol, likelihood_ret)
+from argamma import ARG, ARGparams
 from mygmm import Results
 
 __author__ = "Stanislav Khrapov"
@@ -112,6 +111,28 @@ class ARGTestCase(ut.TestCase):
             self.assertEqual(argmodel.dafun(uarg).shape, (3, uarg.shape[0]))
             self.assertEqual(argmodel.dbfun(uarg).shape, (3, uarg.shape[0]))
 
+    def test_load_data(self):
+        """Test load data into the model object."""
+        argmodel = ARG(ARGparams())
+
+        self.assertEqual(argmodel.vol, None)
+        self.assertEqual(argmodel.ret, None)
+
+        argmodel.load_data(vol=0)
+
+        self.assertEqual(argmodel.vol, 0)
+        self.assertEqual(argmodel.ret, None)
+
+        argmodel.load_data(ret=1)
+
+        self.assertEqual(argmodel.vol, None)
+        self.assertEqual(argmodel.ret, 1)
+
+        argmodel.load_data(ret=2, vol=3)
+
+        self.assertEqual(argmodel.vol, 3)
+        self.assertEqual(argmodel.ret, 2)
+
     def test_simulations(self):
         """Test simulation of ARG model."""
 
@@ -145,20 +166,16 @@ class ARGTestCase(ut.TestCase):
     def test_likelihoods(self):
         """Test likelihood functions."""
 
-        theta = np.array([1, 1, 1])
+        theta_vol = np.array([1, 1, 1])
+        theta_ret = np.array([1, 1])
         vol = np.array([1, 2, 3])
+        ret = np.array([4, 5, 6])
 
-        self.assertIsInstance(likelihood_vol(theta, vol), float)
-        self.assertIsInstance(likelihood_vol_grad(theta, vol), np.ndarray)
-        self.assertIsInstance(likelihood_vol_hess(theta, vol), np.ndarray)
+        argmodel = ARG(param=ARGparams())
+        argmodel.load_data(vol=vol, ret=ret)
 
-        self.assertEqual(likelihood_vol_grad(theta, vol).shape, theta.shape)
-        self.assertEqual(likelihood_vol_hess(theta, vol).shape,
-                         (theta.shape[0], theta.shape[0]))
-
-        vol = np.array([1])
-
-        self.assertRaises(AssertionError, lambda: likelihood_vol(theta, vol))
+        self.assertIsInstance(argmodel.likelihood_vol(theta_vol), float)
+        self.assertIsInstance(argmodel.likelihood_ret(theta_ret), float)
 
     def test_estimate_mle(self):
         """Test MLE estimation."""
@@ -166,8 +183,9 @@ class ARGTestCase(ut.TestCase):
         argmodel = ARG(param=param_true)
         nsim, nobs = 1, 500
         vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+        argmodel.load_data(vol=vol)
         param_final, results = argmodel.estimate_mle(param_start=param_true,
-                                                     vol=vol, model='vol')
+                                                     model='vol')
         ratio = param_true.theta_vol / param_final.theta_vol
 
         self.assertIsInstance(param_final, ARGparams)

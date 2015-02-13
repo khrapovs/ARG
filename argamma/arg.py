@@ -35,7 +35,6 @@ import numdifftools as nd
 from statsmodels.tsa.tsatools import lagmat
 
 from .argparams import ARGparams
-from .likelihoods import likelihood_vol, likelihood_ret
 from mygmm import GMM
 
 __author__ = "Stanislav Khrapov"
@@ -58,6 +57,10 @@ class ARG(object):
     ----------
     param : ARGparams instance
         Parameters of the model
+    vol : (nobs, ) array
+        Volatility time series
+    ret : (nobs, ) array
+        Return time series
 
     Methods
     -------
@@ -71,6 +74,10 @@ class ARG(object):
         Derivative of a(u) function wrt scale, rho, and delta
     dbfun
         Derivative of b(u) function wrt scale, rho, and delta
+    umean
+        Unconditional mean of the volatility process
+    uvar
+        Unconditional variance of the volatility process
     plot_abc
         Vizualize functions a, b, and c
     vsim
@@ -99,6 +106,22 @@ class ARG(object):
         """
         super(ARG, self).__init__()
         self.param = param
+        self.vol = None
+        self.ret = None
+
+    def load_data(self, vol=None, ret=None):
+        """Load data into the model object.
+
+        Parameters
+        ----------
+        vol : (nobs, ) array
+            Volatility time series
+        ret : (nobs, ) array
+            Return time series
+
+        """
+        self.vol = vol
+        self.ret = ret
 
     def afun(self, uarg):
         r"""Function a().
@@ -207,7 +230,7 @@ class ARG(object):
             * np.log(1 + self.param.scale * uarg / (1-self.param.rho))
 
     def umean(self):
-        r"""Unconditional mean of the process.
+        r"""Unconditional mean of the volatility process.
 
         .. math::
             E\left[Y_{t}\right]=\frac{c\delta}{1-\rho}
@@ -220,7 +243,7 @@ class ARG(object):
         return self.param.scale * self.param.delta / (1 - self.param.rho)
 
     def uvar(self):
-        r"""Unconditional variance of the process.
+        r"""Unconditional variance of the volatility process.
 
         .. math::
             V\left[Y_{t}\right]=\frac{c^{2}\delta}{\left(1-\rho\right)^{2}}
@@ -233,7 +256,7 @@ class ARG(object):
         return self.umean() / self.param.delta
 
     def ustd(self):
-        r"""Unconditional variance of the process.
+        r"""Unconditional standard deviation of the volatility process.
 
         .. math::
             \sqrt{V\left[Y_{t}\right]}
@@ -417,25 +440,18 @@ class ARG(object):
         sns.distplot(vol, rug=True, hist=False)
         plt.show()
 
-    def estimate_mle(self, param_start=None, vol=None, ret=None, model=None,
-                     param_vol=None):
+    def estimate_mle(self, param_start=None, model=None):
         """Estimate model parameters via Maximum Likelihood.
 
         Parameters
         ----------
         param_start : ARGparams instance, optional
             Starting value for optimization
-        vol : (nobs, ) array
-            Volatility time series
-        ret : (nobs, ) array
-            Return time series
         model : str
             Type of model to estimate. Must be in:
                 - 'vol'
                 - 'ret'
                 - 'joint'
-        param_vol : ARGparams instance, optional
-            Parameters of the volatility model
 
         Returns
         -------
@@ -451,20 +467,18 @@ class ARG(object):
         options = {'disp': False, 'maxiter': int(1e6)}
 
         if model == 'vol':
-            likelihood = lambda theta: likelihood_vol(theta, vol=vol)
+            likelihood = self.likelihood_vol
             theta_start = param_start.theta_vol
         elif model == 'ret':
-            likelihood = lambda theta: likelihood_ret(theta, vol=vol, ret=ret,
-                                                      param_vol=param_vol)
+            likelihood = self.likelihood_ret
             theta_start = param_start.theta_ret
 
-        jac = nd.Gradient(likelihood)
-        hess = nd.Hessian(likelihood)
+        results = minimize(likelihood, theta_start, method='L-BFGS-B',
+                           jac=nd.Gradient(likelihood), options=options)
 
-        results = minimize(likelihood, theta_start,
-                           method='L-BFGS-B', jac=jac, options=options)
-        hess_mat = hess(results.x)
-        results.std_theta = np.diag(np.linalg.inv(hess_mat) / len(vol))**.5
+        hess_mat = nd.Hessian(likelihood)(results.x)
+        results.std_theta = np.diag(np.linalg.inv(hess_mat) \
+            / len(self.vol))**.5
         results.tstat = results.x / results.std_theta
 
         if model == 'vol':
@@ -473,6 +487,59 @@ class ARG(object):
             param_final = ARGparams(theta_ret=results.x)
 
         return param_final, results
+
+    def likelihood_vol(self, theta_vol):
+        """Log-likelihood for ARG(1) volatility model.
+
+        Parameters
+        ----------
+        theta : array_like
+            Model parameters. [scale, rho, delta]
+
+        Returns
+        -------
+        float
+            Value of the log-likelihood function
+
+        """
+        if theta_vol.min() <= 0:
+            return 1e10
+        param = ARGparams(theta_vol=theta_vol)
+        degf = param.delta * 2
+        nonc = param.rho * self.vol[:-1] / param.scale * 2
+        logf = scs.ncx2.logpdf(self.vol[1:], degf, nonc, scale=param.scale/2)
+        return -logf[~np.isnan(logf)].mean()
+
+    def likelihood_ret(self, theta_ret):
+        """Log-likelihood for return model.
+
+        Parameters
+        ----------
+        theta : array_like
+            Model parameters. [phi, price_ret]
+
+        Returns
+        -------
+        logf : float
+            Value of the log-likelihood function
+
+        """
+        [phi, price_ret] = theta_ret
+        [scale, rho, delta] = self.param.theta_vol
+
+        a = lambda u: rho * u / (1 + scale * u)
+        b = lambda u: delta * np.log(1 + scale * u)
+
+        k = (scale * (1 + rho))**(-.5)
+        psi = phi * k + (price_ret - .5) * (1 - phi**2)
+
+        vollag = lagmat(self.vol, 1).flatten()[1:]
+        vol, ret = self.vol[1:], self.ret[1:]
+
+        r_mean = psi * vol + a(- phi * k) * vollag + b(- phi * k)
+        r_var = vol * (1 - phi**2)
+
+        return - scs.norm.logpdf(ret, r_mean, np.sqrt(r_var)).mean()
 
     def momcond(self, theta, vol=None, uarg=None, zlag=1):
         """Moment conditions for spectral GMM estimator.

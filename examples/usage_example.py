@@ -62,8 +62,9 @@ def estimate_mle_vol():
     argmodel = ARG(param=param_true)
     nsim, nobs = 1, 500
     vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+    argmodel.load_data(vol=vol)
     param_final, results = argmodel.estimate_mle(param_start=param_true,
-                                                 vol=vol, model='vol')
+                                                 model='vol')
 
     print('True parameter:', param_true)
     print('Final parameter: ', param_final)
@@ -75,7 +76,7 @@ def estimate_mle_vol():
 def estimate_mle_ret():
     """Try MLE estimator with return."""
     rho = .9
-    delta = .75
+    delta = 1.1
     dailymean = .2**2 / 365
     scale = dailymean * (1 - rho) / delta
     price_vol, price_ret = -16, .95
@@ -88,14 +89,13 @@ def estimate_mle_ret():
     vol = argmodel.vsim(nsim=nsim, nobs=nobs)
     ret = argmodel.rsim(vol=vol).flatten()
     vol = vol.flatten()
+    argmodel.load_data(vol=vol, ret=ret)
 
     pfinal_vol, results_vol = argmodel.estimate_mle(param_start=param_true,
-                                                    vol=vol, model='vol')
+                                                    model='vol')
 
     pfinal_ret, results_ret = argmodel.estimate_mle(param_start=param_true,
-                                                    ret=ret, vol=vol,
-                                                    model='ret',
-                                                    param_vol=param_final_vol)
+                                                    model='ret')
 
     return pfinal_vol, pfinal_ret, results_vol, results_ret
 
@@ -130,8 +130,8 @@ if __name__ == '__main__':
 
     print(results_vol)
     print(results_ret)
-    print(param_final_vol.theta_vol)
-    print(param_final_ret.theta_ret)
+    print(pfinal_vol.theta_vol)
+    print(pfinal_ret.theta_ret)
 
     #estimate_gmm()
 
