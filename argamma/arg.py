@@ -57,8 +57,6 @@ class ARG(object):
     ----------
     param : ARGparams instance
         Parameters of the model
-    vol : 1d array
-        Time series data
 
     Methods
     -------
@@ -100,7 +98,6 @@ class ARG(object):
         """
         super(ARG, self).__init__()
         self.param = param
-        self.vol = None
 
     def afun(self, uarg):
         r"""Function a().
@@ -421,27 +418,15 @@ class ARG(object):
         sns.distplot(vol, rug=True, hist=False)
         plt.show()
 
-    def load_data(self, vol=None):
-        """Load data to the class.
-
-        Parameters
-        ----------
-        vol : (nobs, ) array
-            Time series
-
-        """
-        if not vol is None:
-            self.vol = vol
-        else:
-            raise ValueError("No data is given!")
-
-    def estimate_mle(self, param_start=None):
+    def estimate_mle(self, param_start=None, vol=None):
         """Estimate model parameters via Maximum Likelihood.
 
         Parameters
         ----------
         param_start : ARGparams instance, optional
             Starting value for optimization
+        vol : (nobs, ) array
+            Volatility time series
 
         Returns
         -------
@@ -454,22 +439,24 @@ class ARG(object):
         # Optimization options
         options = {'disp': False, 'maxiter': int(1e6)}
         results = minimize(likelihood_vol, param_start.theta_vol,
-                           args=(self.vol, ), method='L-BFGS-B',
+                           args=(vol, ), method='L-BFGS-B',
                            jac=likelihood_vol_grad,
                            options=options)
-        hess = likelihood_vol_hess(results.x, self.vol)
-        results.std_theta = np.diag(np.linalg.inv(hess) / len(self.vol))**.5
+        hess = likelihood_vol_hess(results.x, vol)
+        results.std_theta = np.diag(np.linalg.inv(hess) / len(vol))**.5
         results.tstat = results.x / results.std_theta
         param_final = ARGparams(theta_vol=results.x)
         return param_final, results
 
-    def momcond(self, theta, uarg=None, zlag=1):
+    def momcond(self, theta, vol=None, uarg=None, zlag=1):
         """Moment conditions for spectral GMM estimator.
 
         Parameters
         ----------
         theta : (3, ) array
             Vector of model parameters. [scale, rho, delta]
+        vol : (nobs, ) array
+            Volatility time series
         uarg : (nu, ) array
             Grid to evaluate a and b functions
         zlag : int
@@ -490,10 +477,8 @@ class ARG(object):
 
         if uarg is None:
             raise ValueError("uarg is missing!")
-        if self.vol is None:
-            raise ValueError("vol data is missing!")
 
-        vollag, vol = lagmat(self.vol, maxlag=zlag,
+        vollag, vol = lagmat(vol, maxlag=zlag,
                              original='sep', trim='both')
         prevvol = vollag[:, 0][:, np.newaxis]
         # Number of observations after truncation
@@ -538,13 +523,15 @@ class ARG(object):
 
         return moment, dmoment
 
-    def estimate_gmm(self, param_start=None, **kwargs):
+    def estimate_gmm(self, param_start=None, vol=None, **kwargs):
         """Estimate model parameters using GMM.
 
         Parameters
         ----------
         param_start : ARGparams instance
             Starting value for optimization
+        vol : (nobs, ) array
+            Volatility time series
         uarg : array
             Grid to evaluate a and b functions
         zlag : int, optional
@@ -557,7 +544,7 @@ class ARG(object):
 
         """
         estimator = GMM(self.momcond)
-        return estimator.gmmest(param_start, **kwargs)
+        return estimator.gmmest(param_start, vol=vol, **kwargs)
 
 
 if __name__ == '__main__':

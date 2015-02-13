@@ -160,23 +160,14 @@ class ARGTestCase(ut.TestCase):
 
         self.assertRaises(AssertionError, lambda: likelihood_vol(theta, vol))
 
-    def test_load_data(self):
-        """Test load data method."""
-        vol = np.array([1, 2, 3])
-        argmodel = ARG(ARGparams())
-        self.assertRaises(ValueError, lambda: argmodel.load_data())
-        argmodel.load_data(vol=vol)
-
-        np.testing.assert_array_equal(argmodel.vol, vol)
-
     def test_estimate_mle(self):
         """Test MLE estimation."""
         param_true = ARGparams()
         argmodel = ARG(param=param_true)
         nsim, nobs = 1, 500
         vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
-        argmodel.load_data(vol=vol)
-        param_final, results = argmodel.estimate_mle(param_start=param_true)
+        param_final, results = argmodel.estimate_mle(param_start=param_true,
+                                                     vol=vol)
         ratio = param_true.theta_vol / param_final.theta_vol
 
         self.assertIsInstance(param_final, ARGparams)
@@ -201,8 +192,9 @@ class ARGTestCase(ut.TestCase):
         nsim, nobs = 1, 10
         instrlag = 2
         vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
-        argmodel.load_data(vol=vol)
-        moment, dmoment = argmodel.momcond(theta, uarg=uarg, zlag=instrlag)
+
+        moment, dmoment = argmodel.momcond(theta, vol=vol, uarg=uarg,
+                                           zlag=instrlag)
 
         np.testing.assert_array_equal(argmodel.param.theta_vol, theta)
 
@@ -218,9 +210,9 @@ class ARGTestCase(ut.TestCase):
         argmodel = ARG(param=param_true)
         nsim, nobs = 1, 500
         vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
-        argmodel.load_data(vol=vol)
         uarg = np.linspace(.1, 10, 3) * 1j
-        results = argmodel.estimate_gmm(param_true.theta_vol,
+
+        results = argmodel.estimate_gmm(param_true.theta_vol, vol=vol,
                                         uarg=uarg, zlag=2)
 
         self.assertIsInstance(results, Results)

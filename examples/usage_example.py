@@ -57,15 +57,14 @@ def try_simulation():
     plt.show()
 
 
-
 def estimate_mle():
     """Try MLE estimator."""
     param_true = ARGparams()
     argmodel = ARG(param=param_true)
     nsim, nobs = 1, 500
     vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
-    argmodel.load_data(vol=vol)
-    param_final, results = argmodel.estimate_mle(param_start=param_true)
+    param_final, results = argmodel.estimate_mle(param_start=param_true,
+                                                 vol=vol)
 
     print('True parameter:', param_true)
     print('Final parameter: ', param_final)
@@ -80,9 +79,9 @@ def estimate_gmm():
     argmodel = ARG(param=param_true)
     nsim, nobs = 1, 500
     vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
-    argmodel.load_data(vol=vol)
     uarg = np.linspace(.1, 10, 3) * 1j
-    results = argmodel.estimate_gmm(param_true.theta_vol, uarg=uarg, zlag=2)
+    results = argmodel.estimate_gmm(param_start=param_true.theta_vol,
+                                    vol=vol, uarg=uarg, zlag=2)
 
     print('True parameter:', param_true)
     print('Final parameter: ', ARGparams(theta_vol=results.theta))
@@ -93,9 +92,9 @@ def estimate_gmm():
 if __name__ == '__main__':
 
     #play_with_arg()
-#    param_final, results = estimate_mle()
-#    print(results.x)
-#    print(results.std_theta)
-#    print(results.tstat)
-#    estimate_gmm()
+    param_final, results = estimate_mle()
+    print(results.x)
+    print(results.std_theta)
+    print(results.tstat)
+    estimate_gmm()
     try_simulation()
