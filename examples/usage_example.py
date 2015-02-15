@@ -46,7 +46,8 @@ def try_simulation():
     nobs = 500
     argmodel = ARG(param=param)
     vol = argmodel.vsim(nsim=1, nobs=nobs)
-    ret = argmodel.rsim(vol)
+    argmodel.load_data(vol=vol)
+    ret = argmodel.rsim()
 
     plt.figure(figsize=(8, 4))
     plt.subplot(2, 1, 1)
@@ -114,7 +115,8 @@ def estimate_mle_joint():
     argmodel = ARG(param=param_true)
     nsim, nobs = 1, 500
     vol = argmodel.vsim(nsim=nsim, nobs=nobs)
-    ret = argmodel.rsim(vol=vol).flatten()
+    argmodel.load_data(vol=vol)
+    ret = argmodel.rsim().flatten()
     vol = vol.flatten()
     argmodel.load_data(vol=vol, ret=ret)
 
@@ -133,6 +135,7 @@ def estimate_gmm():
     argmodel = ARG(param=param_true)
     nsim, nobs = 1, 500
     vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+    argmodel.load_data(vol=vol)
     uarg = np.linspace(.1, 10, 3) * 1j
     param_final, results = argmodel.estimate_gmm(
         param_start=param_true.get_theta_vol(), vol=vol, uarg=uarg, zlag=2)

@@ -30,7 +30,7 @@ class ARGparams(object):
     """
     def __init__(self, scale=.001, rho=.9, delta=1.1,
                  tau1=.5, tau2=1, phi=-.5,
-                 price_vol=-10., price_ret=10.):
+                 price_vol=-1., price_ret=1.):
         """Initialize the class instance.
 
         Parameters
@@ -79,7 +79,8 @@ class ARGparams(object):
         if theta_vol is not None:
             assert len(theta_vol) == 3, \
                 "Wrong number of parameters in theta_vol!"
-            assert theta_vol[0] > 0, "Scale must be greater than zero!"
+            if theta_vol[0] <= 0:
+                raise ValueError("Scale must be greater than zero!")
             [self.scale, self.rho, self.delta] = theta_vol
 
         if theta_ret is not None:

@@ -86,6 +86,26 @@ class ARGTestCase(ut.TestCase):
 
         np.testing.assert_array_equal(param.get_theta(), theta_true)
 
+    def test_conversion_to_q(self):
+        """Test conversion to Q measure."""
+        scale, rho, delta = 1, 2, 3
+        phi, price_vol, price_ret = -.5, -5, 5
+        param = ARGparams(scale=scale, rho=rho, delta=delta,
+                          phi=phi, price_ret=price_ret, price_vol=price_vol)
+        argmodel = ARG(param=param)
+        param_q = argmodel.convert_to_q()
+
+        self.assertIsInstance(param_q, ARGparams)
+
+        factor = 1/(1 + scale * (price_vol + argmodel.alpha(price_ret)))
+        scale = scale * factor
+        beta = param.beta * factor
+        rho = scale * beta
+
+        self.assertEqual(param_q.scale, scale)
+        self.assertEqual(param_q.rho, rho)
+        self.assertEqual(param_q.delta, delta)
+
     def test_uncond_moments(self):
         """Test unconditional moments of the ARG model."""
 
@@ -104,7 +124,7 @@ class ARGTestCase(ut.TestCase):
 
         argmodel = ARG(ARGparams())
         for i in [1, 10]:
-            uarg = np.linspace(-50, 100, 10)
+            uarg = np.linspace(-50, 100, i)
 
             self.assertIsInstance(argmodel.afun(uarg), np.ndarray)
             self.assertIsInstance(argmodel.bfun(uarg), np.ndarray)
@@ -114,12 +134,27 @@ class ARGTestCase(ut.TestCase):
             self.assertEqual(uarg.shape, argmodel.bfun(uarg).shape)
             self.assertEqual(uarg.shape, argmodel.cfun(uarg).shape)
 
+    def test_ret_functions(self):
+        """Test functions alpha, beta, gamma of ARG model."""
+
+        argmodel = ARG(ARGparams())
+        for i in [1, 10]:
+            uarg = np.linspace(-50, 100, i)
+
+            self.assertIsInstance(argmodel.alpha(uarg), np.ndarray)
+            self.assertIsInstance(argmodel.beta(uarg), np.ndarray)
+            self.assertIsInstance(argmodel.gamma(uarg), np.ndarray)
+
+            self.assertEqual(uarg.shape, argmodel.alpha(uarg).shape)
+            self.assertEqual(uarg.shape, argmodel.beta(uarg).shape)
+            self.assertEqual(uarg.shape, argmodel.gamma(uarg).shape)
+
     def test_abc_derivatives(self):
         """Test derivatives of functions a, b, c of ARG model."""
 
         argmodel = ARG(ARGparams())
         for i in [1, 10]:
-            uarg = np.linspace(-50, 100, 10)
+            uarg = np.linspace(-50, 100, i)
 
             self.assertIsInstance(argmodel.dafun(uarg), np.ndarray)
             self.assertIsInstance(argmodel.dbfun(uarg), np.ndarray)
@@ -156,7 +191,11 @@ class ARGTestCase(ut.TestCase):
 
         self.assertIsInstance(argmodel.vsim(), np.ndarray)
         self.assertIsInstance(argmodel.vsim2(), np.ndarray)
-        self.assertIsInstance(argmodel.rsim(argmodel.vsim2()), np.ndarray)
+
+        vol = argmodel.vsim2()
+        argmodel.load_data(vol=vol)
+
+        self.assertIsInstance(argmodel.rsim(), np.ndarray)
 
         shapes = []
         nsim, nobs = 1, 1
@@ -171,8 +210,9 @@ class ARGTestCase(ut.TestCase):
 
             self.assertEqual(argmodel.vsim(nsim=nsim, nobs=nobs).shape, shape)
             vol = argmodel.vsim2(nsim=nsim, nobs=nobs)
+            argmodel.load_data(vol=vol)
             self.assertEqual(vol.shape, shape)
-            self.assertEqual(argmodel.rsim(vol=vol).shape, shape)
+            self.assertEqual(argmodel.rsim().shape, shape)
 
             self.assertEqual(argmodel.vsim_last(nsim=nsim, nobs=nobs).shape,
                              (nsim, ))
@@ -182,8 +222,8 @@ class ARGTestCase(ut.TestCase):
     def test_likelihoods(self):
         """Test likelihood functions."""
 
-        theta_vol = np.array([1, 1, 1])
-        theta_ret = np.array([1, 1])
+        theta_vol = np.array([1e-5, .9, 1.1])
+        theta_ret = np.array([-.5, 1])
         theta = np.ones(5)
         vol = np.array([1, 2, 3])
         ret = np.array([4, 5, 6])

@@ -108,10 +108,28 @@ class ARG(object):
             Parameter object
 
         """
-        super(ARG, self).__init__()
+        #super(ARG, self).__init__()
         self.param = param
         self.vol = None
         self.ret = None
+
+    def convert_to_q(self):
+        """Convert physical (P) parameters to risk-neutral (Q) parameters.
+
+        Returns
+        -------
+        ARGparams instance
+            Risk-neutral parameters
+
+        """
+        factor = 1/(1 + self.param.scale \
+            * (self.param.price_vol + self.alpha(self.param.price_ret)))
+        if factor <= 0:
+            raise ValueError('Invalid parameters in Q conversion!')
+        scale = self.param.scale * factor
+        beta = self.param.beta * factor
+        rho = scale * beta
+        return ARGparams(scale=scale, rho=rho, delta=self.param.delta)
 
     def load_data(self, vol=None, ret=None):
         """Load data into the model object.
@@ -146,6 +164,56 @@ class ARG(object):
         """
         return self.param.rho * uarg / (1 + self.param.scale * uarg)
 
+    def bfun(self, uarg):
+        r"""Function b().
+
+        .. math::
+            b\left(u\right)=\delta\log\left(1+cu\right)
+
+        Parameters
+        ----------
+        uarg : array
+
+        Returns
+        -------
+        array
+            Same dimension as uarg
+
+        """
+        return self.param.delta * np.log(1 + self.param.scale * uarg)
+
+    def afun_q(self, uarg):
+        r"""Risk-neutral function a().
+
+        Parameters
+        ----------
+        uarg : array
+
+        Returns
+        -------
+        array
+            Same dimension as uarg
+
+        """
+        argmodel_q = ARG(param=self.convert_to_q())
+        return argmodel_q.afun(uarg)
+
+    def bfun_q(self, uarg):
+        r"""Risk-neutral function b().
+
+        Parameters
+        ----------
+        uarg : array
+
+        Returns
+        -------
+        array
+            Same dimension as uarg
+
+        """
+        argmodel_q = ARG(param=self.convert_to_q())
+        return argmodel_q.bfun(uarg)
+
     def dafun(self, uarg):
         r"""Derivative of function a() with respect to scale, rho, and delta.
 
@@ -170,24 +238,6 @@ class ARG(object):
         da_rho = uarg / (self.param.scale*uarg + 1)
         da_delta = np.zeros_like(uarg)
         return np.vstack((da_scale, da_rho, da_delta))
-
-    def bfun(self, uarg):
-        r"""Function b().
-
-        .. math::
-            b\left(u\right)=\delta\log\left(1+cu\right)
-
-        Parameters
-        ----------
-        uarg : array
-
-        Returns
-        -------
-        array
-            Same dimension as uarg
-
-        """
-        return self.param.delta * np.log(1 + self.param.scale * uarg)
 
     def dbfun(self, uarg):
         r"""Derivative of function b() with respect to scale, rho, and delta.
@@ -259,6 +309,36 @@ class ARG(object):
         """
         return ((self.param.price_ret-.5) * (1-self.param.phi**2) \
             + self.center()) * uarg - .5 * uarg**2 * (1 - self.param.phi**2)
+
+    def beta(self, uarg):
+        """Function beta().
+
+        Parameters
+        ----------
+        uarg : array
+
+        Returns
+        -------
+        array
+            Same dimension as uarg
+
+        """
+        return uarg * self.afun_q(- self.center())
+
+    def gamma(self, uarg):
+        """Function gamma().
+
+        Parameters
+        ----------
+        uarg : array
+
+        Returns
+        -------
+        array
+            Same dimension as uarg
+
+        """
+        return uarg * self.bfun_q(- self.center())
 
     def umean(self):
         r"""Unconditional mean of the volatility process.
@@ -386,13 +466,40 @@ class ARG(object):
             vol[:, i] = scs.ncx2.rvs(df, nc, size=nsim)
         return vol * self.param.scale / 2
 
-    def rsim(self, vol=None):
-        """Simulate returns given ARG(1) process for volatility.
+    def ret_cmean(self):
+        """Conditional mean of return.
 
-        Parameters
-        ----------
-        vol : (nsim, nobs) array
-            Volatility paths
+        Returns
+        -------
+        (nsim, nobs) array
+            Conditional mean
+
+        """
+        u = sp.Symbol('u')
+        A1 = float(self.alpha(u).diff(u, 1).subs(u, 0))
+        B1 = float(self.beta(u).diff(u, 1).subs(u, 0))
+        C1 = float(self.gamma(u).diff(u, 1).subs(u, 0))
+        vol = np.atleast_2d(self.vol)
+        return A1 * vol[:, 1:] + B1 * vol[:, :-1] + C1
+
+    def ret_cvar(self):
+        """Conditional variance of return.
+
+        Returns
+        -------
+        (nsim, nobs) array
+            Conditional mean
+
+        """
+        u = sp.Symbol('u')
+        A2 = float(-self.alpha(u).diff(u, 2).subs(u, 0))
+        B2 = float(-self.beta(u).diff(u, 2).subs(u, 0))
+        C2 = float(-self.gamma(u).diff(u, 2).subs(u, 0))
+        vol = np.atleast_2d(self.vol)
+        return A2 * vol[:, 1:] + B2 * vol[:, :-1] + C2
+
+    def rsim(self):
+        """Simulate returns given ARG(1) process for volatility.
 
         Returns
         -------
@@ -400,34 +507,10 @@ class ARG(object):
             Simulated data
 
         """
-        # Risk-neutral parameters
-        factor = 1/(1 + self.param.scale \
-            * (self.param.price_vol + self.alpha(self.param.price_ret)))
-        scale_star = self.param.scale * factor
-        betap_star = self.param.beta * scale_star / self.param.scale
-        rho_star = scale_star * betap_star
-
-        a_star = lambda u: rho_star * u / (1 + scale_star * u)
-        b_star = lambda u: self.param.delta * sp.log(1 + scale_star * u)
-
-        beta  = lambda v: v * a_star(- self.center())
-        gamma = lambda v: v * b_star(- self.center())
-
-        u = sp.Symbol('u')
-        A1 = float(self.alpha(u).diff(u, 1).subs(u, 0))
-        B1 = float(beta(u).diff(u, 1).subs(u, 0))
-        C1 = float(gamma(u).diff(u, 1).subs(u, 0))
-        A2 = float(-self.alpha(u).diff(u, 2).subs(u, 0))
-        B2 = float(-beta(u).diff(u, 2).subs(u, 0))
-        C2 = float(-gamma(u).diff(u, 2).subs(u, 0))
-
-        # conditional mean and variance of return
-        Er = A1 * vol[:, 1:] + B1 * vol[:, :-1] + C1
-        Vr = A2 * vol[:, 1:] + B2 * vol[:, :-1] + C2
-
         # simulate returns
-        ret = Er + Vr**.5 * np.random.normal(size=Er.shape)
-        return np.hstack((np.zeros((vol.shape[0], 1)), ret))
+        ret = self.ret_cmean() + self.ret_cvar()**.5 \
+            * np.random.normal(size=self.vol[:, 1:].shape)
+        return np.hstack((np.zeros((self.vol.shape[0], 1)), ret))
 
 
     def vsim_last(self, **args):
@@ -561,16 +644,8 @@ class ARG(object):
             Value of the log-likelihood function
 
         """
-        self.param.update(theta_ret=theta_ret)
-        [phi, price_ret] = self.param.get_theta_ret()
-        [scale, rho, delta] = self.param.get_theta_vol()
-
-        psi = self.center() + (price_ret - .5) * (1 - phi**2)
-
-        r_mean = psi * self.vol[1:] \
-            + self.afun(- self.center()) * self.vol[:-1] \
-            + self.bfun(- self.center())
-        r_var = self.vol[1:] * (1 - phi**2)
+        r_mean = self.ret_cmean().flatten()
+        r_var = self.ret_cvar().flatten()
 
         return - scs.norm.logpdf(self.ret[1:], r_mean, np.sqrt(r_var)).mean()
 
@@ -588,7 +663,11 @@ class ARG(object):
             Value of the log-likelihood function
 
         """
-        return self.likelihood_vol(theta[:3]) + self.likelihood_ret(theta[3:])
+        try:
+            return self.likelihood_vol(theta[:3]) \
+                + self.likelihood_ret(theta[3:])
+        except ValueError:
+            return 1e10
 
     def momcond(self, theta, vol=None, uarg=None, zlag=1):
         """Moment conditions for spectral GMM estimator.
@@ -620,8 +699,7 @@ class ARG(object):
         if uarg is None:
             raise ValueError("uarg is missing!")
 
-        vollag, vol = lagmat(vol, maxlag=zlag,
-                             original='sep', trim='both')
+        vollag, vol = lagmat(vol, maxlag=zlag, original='sep', trim='both')
         prevvol = vollag[:, 0][:, np.newaxis]
         # Number of observations after truncation
         nobs = vol.shape[0]
