@@ -530,12 +530,13 @@ class ARG(object):
             Value of the log-likelihood function
 
         """
-        [phi, price_ret] = theta_ret
+        self.param.update(theta_ret=theta_ret)
+        [phi, price_ret] = self.param.get_theta_ret()
         [scale, rho, delta] = self.param.get_theta_vol()
 
         # TODO: replace with method calls
-        a = lambda u: rho * u / (1 + scale * u)
-        b = lambda u: delta * np.log(1 + scale * u)
+#        a = lambda u: rho * u / (1 + scale * u)
+#        b = lambda u: delta * np.log(1 + scale * u)
 
         k = (scale * (1 + rho))**(-.5)
         psi = phi * k + (price_ret - .5) * (1 - phi**2)
@@ -543,7 +544,8 @@ class ARG(object):
         vollag = lagmat(self.vol, 1).flatten()[1:]
         vol, ret = self.vol[1:], self.ret[1:]
 
-        r_mean = psi * vol + a(- phi * k) * vollag + b(- phi * k)
+        r_mean = psi * vol + self.afun(- phi * k) * vollag \
+            + self.bfun(- phi * k)
         r_var = vol * (1 - phi**2)
 
         return - scs.norm.logpdf(ret, r_mean, np.sqrt(r_var)).mean()

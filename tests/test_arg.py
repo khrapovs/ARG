@@ -232,11 +232,11 @@ class ARGTestCase(ut.TestCase):
         vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
         uarg = np.linspace(.1, 10, 3) * 1j
 
-        results = argmodel.estimate_gmm(param_true.get_theta_vol(), vol=vol,
-                                        uarg=uarg, zlag=2)
+        param_final, results = argmodel.estimate_gmm(
+            param_true.get_theta_vol(), vol=vol, uarg=uarg, zlag=2)
 
         self.assertIsInstance(results, Results)
-        self.assertIsInstance(results.theta, np.ndarray)
+        self.assertIsInstance(param_final.get_theta_vol(), np.ndarray)
         self.assertEqual(results.theta.shape[0],
                          param_true.get_theta_vol().shape[0])
 
