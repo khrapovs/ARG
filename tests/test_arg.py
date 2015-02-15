@@ -45,10 +45,6 @@ class ARGTestCase(ut.TestCase):
         self.assertEqual(param.rho, rho)
         self.assertEqual(param.delta, delta)
 
-        theta = [0, 0, 0]
-#        self.assertRaises(AssertionError,
-#                          lambda: param.update(theta_vol=theta))
-
     def test_param_class_ret(self):
         """Test parameter class for return parameters."""
 
@@ -72,9 +68,23 @@ class ARGTestCase(ut.TestCase):
         self.assertEqual(param.phi, phi)
         self.assertEqual(param.price_ret, price_ret)
 
+    def test_param_class_joint(self):
+        """Test parameter class for joint parameters."""
+
+        scale, rho, delta = 1, 2, 3
+        phi, price_vol, price_ret = -.5, -5, 5
+        param = ARGparams(scale=scale, rho=rho, delta=delta,
+                          phi=phi, price_ret=price_ret)
+
+        theta_true = [scale, rho, delta, phi, price_ret]
+
+        self.assertIsInstance(param.get_theta(), np.ndarray)
+        np.testing.assert_array_equal(param.get_theta(), theta_true)
+
     def test_uncond_moments(self):
         """Test unconditional moments of the ARG model."""
 
+        scale, rho, delta = 1, 2, 3
         argmodel = ARG(ARGparams())
 
         self.assertIsInstance(argmodel.umean(), float)
@@ -169,6 +179,7 @@ class ARGTestCase(ut.TestCase):
 
         theta_vol = np.array([1, 1, 1])
         theta_ret = np.array([1, 1])
+        theta = np.ones(5)
         vol = np.array([1, 2, 3])
         ret = np.array([4, 5, 6])
 
@@ -177,6 +188,7 @@ class ARGTestCase(ut.TestCase):
 
         self.assertIsInstance(argmodel.likelihood_vol(theta_vol), float)
         self.assertIsInstance(argmodel.likelihood_ret(theta_ret), float)
+        self.assertIsInstance(argmodel.likelihood_joint(theta), float)
 
     def test_estimate_mle(self):
         """Test MLE estimation."""

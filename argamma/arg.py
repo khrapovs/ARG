@@ -233,6 +233,33 @@ class ARG(object):
         return self.param.delta \
             * np.log(1 + self.param.scale * uarg / (1-self.param.rho))
 
+    def center(self):
+        """No-arb restriction parameter.
+
+        Returns
+        -------
+        float
+            Same dimension as uarg
+
+        """
+        return self.param.phi / (self.param.scale * (1 + self.param.rho))**.5
+
+    def alpha(self, uarg):
+        """Function alpha().
+
+        Parameters
+        ----------
+        uarg : array
+
+        Returns
+        -------
+        array
+            Same dimension as uarg
+
+        """
+        return ((self.param.price_ret-.5) * (1-self.param.phi**2) \
+            + self.center()) * uarg - .5 * uarg**2 * (1 - self.param.phi**2)
+
     def umean(self):
         r"""Unconditional mean of the volatility process.
 
@@ -373,13 +400,9 @@ class ARG(object):
             Simulated data
 
         """
-        center = self.param.phi / (self.param.scale * (1 + self.param.rho))**.5
-
-        alpha = lambda v: (((self.param.price_ret-.5) * (1-self.param.phi**2) \
-            + center) * v - .5 * v**2 * (1-self.param.phi**2) )
         # Risk-neutral parameters
         factor = 1/(1 + self.param.scale \
-            * (self.param.price_vol + alpha(self.param.price_ret)))
+            * (self.param.price_vol + self.alpha(self.param.price_ret)))
         scale_star = self.param.scale * factor
         betap_star = self.param.beta * scale_star / self.param.scale
         rho_star = scale_star * betap_star
@@ -387,23 +410,23 @@ class ARG(object):
         a_star = lambda u: rho_star * u / (1 + scale_star * u)
         b_star = lambda u: self.param.delta * sp.log(1 + scale_star * u)
 
-        beta  = lambda v: v * a_star(- center)
-        gamma = lambda v: v * b_star(- center)
+        beta  = lambda v: v * a_star(- self.center())
+        gamma = lambda v: v * b_star(- self.center())
 
         u = sp.Symbol('u')
-        A1 = float(alpha(u).diff(u, 1).subs(u, 0))
+        A1 = float(self.alpha(u).diff(u, 1).subs(u, 0))
         B1 = float(beta(u).diff(u, 1).subs(u, 0))
         C1 = float(gamma(u).diff(u, 1).subs(u, 0))
-        A2 = float(-alpha(u).diff(u, 2).subs(u, 0))
+        A2 = float(-self.alpha(u).diff(u, 2).subs(u, 0))
         B2 = float(-beta(u).diff(u, 2).subs(u, 0))
         C2 = float(-gamma(u).diff(u, 2).subs(u, 0))
 
         # conditional mean and variance of return
-        Er = (A1 * vol[:, 1:] + B1 * vol[:, :-1] + C1)
-        Vr = (A2 * vol[:, 1:] + B2 * vol[:, :-1] + C2)
+        Er = A1 * vol[:, 1:] + B1 * vol[:, :-1] + C1
+        Vr = A2 * vol[:, 1:] + B2 * vol[:, :-1] + C2
 
         # simulate returns
-        ret = Er + Vr**.5 * np.random.normal(size=vol[:, 1:].shape)
+        ret = Er + Vr**.5 * np.random.normal(size=Er.shape)
         return np.hstack((np.zeros((vol.shape[0], 1)), ret))
 
 
@@ -476,22 +499,30 @@ class ARG(object):
         elif model == 'ret':
             likelihood = self.likelihood_ret
             theta_start = param_start.get_theta_ret()
+        elif model == 'joint':
+            likelihood = self.likelihood_joint
+            theta_start = param_start.get_theta()
+        else:
+            raise(ValueError, 'Model type not supported')
 
         results = minimize(likelihood, theta_start, method='L-BFGS-B',
-                           jac=nd.Gradient(likelihood), options=options)
+                           options=options)
 
         hess_mat = nd.Hessian(likelihood)(results.x)
         results.std_theta = np.diag(np.linalg.inv(hess_mat) \
             / len(self.vol))**.5
         results.tstat = results.x / results.std_theta
 
-        param_final = ARGparams()
         if model == 'vol':
-            param_final.update(theta_vol=results.x)
+            self.param.update(theta_vol=results.x)
         elif model == 'ret':
-            param_final.update(theta_ret=results.x)
+            self.param.update(theta_ret=results.x)
+        elif model == 'joint':
+            self.param.update(theta_vol=results.x[:3], theta_ret=results.x[3:])
+        else:
+            raise(ValueError, 'Model type not supported')
 
-        return param_final, results
+        return self.param, results
 
     def likelihood_vol(self, theta_vol):
         """Log-likelihood for ARG(1) volatility model.
@@ -545,6 +576,22 @@ class ARG(object):
         r_var = vol * (1 - phi**2)
 
         return - scs.norm.logpdf(ret, r_mean, np.sqrt(r_var)).mean()
+
+    def likelihood_joint(self, theta):
+        """Log-likelihood for joint model.
+
+        Parameters
+        ----------
+        theta : array_like
+            Model parameters.
+
+        Returns
+        -------
+        logf : float
+            Value of the log-likelihood function
+
+        """
+        return self.likelihood_vol(theta[:3]) + self.likelihood_ret(theta[3:])
 
     def momcond(self, theta, vol=None, uarg=None, zlag=1):
         """Moment conditions for spectral GMM estimator.

@@ -109,6 +109,17 @@ class ARGparams(object):
         """
         return np.array([self.phi, self.price_ret])
 
+    def get_theta(self):
+        """Get model parameters in a vector.
+
+        Returns
+        -------
+        (5,) array
+            Volatility parameters
+
+        """
+        return np.hstack((self.get_theta_vol(), self.get_theta_ret()))
+
     def __str__(self):
         """This is what is shown when you print() the instance.
 

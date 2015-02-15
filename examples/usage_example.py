@@ -77,7 +77,7 @@ def estimate_mle_ret():
     """Try MLE estimator with return."""
     rho = .9
     delta = 1.1
-    dailymean = .2**2 / 365
+    dailymean = .2**2
     scale = dailymean * (1 - rho) / delta
     price_vol, price_ret = -16, .95
     phi = -.5
@@ -94,10 +94,37 @@ def estimate_mle_ret():
     pfinal_vol, results_vol = argmodel.estimate_mle(param_start=param_true,
                                                     model='vol')
 
-    pfinal_ret, results_ret = argmodel.estimate_mle(param_start=param_true,
+    pfinal_ret, results_ret = argmodel.estimate_mle(param_start=pfinal_vol,
                                                     model='ret')
 
     return pfinal_vol, pfinal_ret, results_vol, results_ret
+
+
+def estimate_mle_joint():
+    """Try MLE estimator with volatility and return."""
+    rho = .9
+    delta = 1.1
+    dailymean = .2**2
+    scale = dailymean * (1 - rho) / delta
+    price_vol, price_ret = -16, .95
+    phi = -.5
+
+    param_true = ARGparams(scale=scale, rho=rho, delta=delta,
+                           phi=phi, price_ret=price_ret)
+    argmodel = ARG(param=param_true)
+    nsim, nobs = 1, 500
+    vol = argmodel.vsim(nsim=nsim, nobs=nobs)
+    ret = argmodel.rsim(vol=vol).flatten()
+    vol = vol.flatten()
+    argmodel.load_data(vol=vol, ret=ret)
+
+    pfinal, results = argmodel.estimate_mle(param_start=param_true,
+                                            model='joint')
+
+    print(results)
+    print(pfinal.get_theta())
+
+    return pfinal, results
 
 
 def estimate_gmm():
@@ -126,12 +153,14 @@ if __name__ == '__main__':
 #    print(results.std_theta)
 #    print(results.tstat)
 
-    pfinal_vol, pfinal_ret, results_vol, results_ret = estimate_mle_ret()
+#    pfinal_vol, pfinal_ret, results_vol, results_ret = estimate_mle_ret()
+#
+#    print(results_vol)
+#    print(results_ret)
+#    print(pfinal_vol.get_theta_vol())
+#    print(pfinal_ret.get_theta_ret())
 
-    print(results_vol)
-    print(results_ret)
-    print(pfinal_vol.get_theta_vol())
-    print(pfinal_ret.get_theta_ret())
-
-    estimate_gmm()
-
+    pfinal, results = estimate_mle_joint()
+#
+#    estimate_gmm()
+#
