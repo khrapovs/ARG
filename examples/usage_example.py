@@ -80,7 +80,7 @@ def estimate_mle_ret():
     dailymean = .2**2 / 365
     scale = dailymean * (1 - rho) / delta
     price_vol, price_ret = -16, .95
-    phi = -.9
+    phi = -.5
 
     param_true = ARGparams(scale=scale, rho=rho, delta=delta,
                            phi=phi, price_ret=price_ret)
@@ -107,11 +107,11 @@ def estimate_gmm():
     nsim, nobs = 1, 500
     vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
     uarg = np.linspace(.1, 10, 3) * 1j
-    results = argmodel.estimate_gmm(param_start=param_true.theta_vol,
-                                    vol=vol, uarg=uarg, zlag=2)
+    param_final, results = argmodel.estimate_gmm(
+        param_start=param_true.theta_vol, vol=vol, uarg=uarg, zlag=2)
 
     print('True parameter:', param_true)
-    print('Final parameter: ', ARGparams(theta_vol=results.theta))
+    print('Final parameter: ', param_final)
     print('Std: ', results.tstat)
     results.print_results()
 
@@ -130,8 +130,8 @@ if __name__ == '__main__':
 
     print(results_vol)
     print(results_ret)
-    print(pfinal_vol.theta_vol)
-    print(pfinal_ret.theta_ret)
+    print(pfinal_vol.get_theta_vol())
+    print(pfinal_ret.get_theta_ret())
 
     #estimate_gmm()
 

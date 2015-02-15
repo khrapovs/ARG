@@ -34,19 +34,20 @@ class ARGTestCase(ut.TestCase):
         theta_true = [scale, rho, delta]
         param = ARGparams(scale=scale, rho=rho, delta=delta)
 
-        self.assertIsInstance(param.theta_vol, np.ndarray)
-        np.testing.assert_array_equal(param.theta_vol, theta_true)
+        self.assertIsInstance(param.get_theta_vol(), np.ndarray)
+        np.testing.assert_array_equal(param.get_theta_vol(), theta_true)
 
         scale, rho, delta = 1, 2, 3
         theta_true = [scale, rho, delta]
-        param = ARGparams(theta_vol=theta_true)
+        param.update(theta_vol=theta_true)
 
         self.assertEqual(param.scale, scale)
         self.assertEqual(param.rho, rho)
         self.assertEqual(param.delta, delta)
 
-        theta = [0, 0]
-        self.assertRaises(AssertionError, lambda: ARGparams(theta_vol=theta))
+        theta = [0, 0, 0]
+        self.assertRaises(AssertionError,
+                          lambda: param.update(theta_vol=theta))
 
     def test_param_class_ret(self):
         """Test parameter class for return parameters."""
@@ -61,12 +62,12 @@ class ARGTestCase(ut.TestCase):
         theta_true = [phi, price_ret]
         param = ARGparams(phi=phi, price_ret=price_ret)
 
-        self.assertIsInstance(param.theta_ret, np.ndarray)
-        np.testing.assert_array_equal(param.theta_ret, theta_true)
+        self.assertIsInstance(param.get_theta_ret(), np.ndarray)
+        np.testing.assert_array_equal(param.get_theta_ret(), theta_true)
 
         phi, price_vol, price_ret = 1, 2, 3
         theta_true = [phi, price_ret]
-        param = ARGparams(theta_ret=theta_true)
+        param.update(theta_ret=theta_true)
 
         self.assertEqual(param.phi, phi)
         self.assertEqual(param.price_ret, price_ret)
@@ -186,17 +187,18 @@ class ARGTestCase(ut.TestCase):
         argmodel.load_data(vol=vol)
         param_final, results = argmodel.estimate_mle(param_start=param_true,
                                                      model='vol')
-        ratio = param_true.theta_vol / param_final.theta_vol
+        ratio = param_true.get_theta_vol() / param_final.get_theta_vol()
 
         self.assertIsInstance(param_final, ARGparams)
         self.assertIsInstance(results, so.optimize.OptimizeResult)
         np.testing.assert_allclose(ratio, np.ones_like(ratio), rtol=1e1)
 
         self.assertIsInstance(results.std_theta, np.ndarray)
-        self.assertEqual(results.std_theta.shape, param_true.theta_vol.shape)
+        self.assertEqual(results.std_theta.shape,
+                         param_true.get_theta_vol().shape)
 
         self.assertIsInstance(results.tstat, np.ndarray)
-        self.assertEqual(results.tstat.shape, param_true.theta_vol.shape)
+        self.assertEqual(results.tstat.shape, param_true.get_theta_vol().shape)
 
     def test_momcond(self):
         """Test moment condition method."""
@@ -214,7 +216,7 @@ class ARGTestCase(ut.TestCase):
         moment, dmoment = argmodel.momcond(theta, vol=vol, uarg=uarg,
                                            zlag=instrlag)
 
-        np.testing.assert_array_equal(argmodel.param.theta_vol, theta)
+        np.testing.assert_array_equal(argmodel.param.get_theta_vol(), theta)
 
         momshape = (vol.shape[0]-instrlag, 2*uarg.shape[0]*instrlag)
         dmomshape = (2*uarg.shape[0]*instrlag, theta.shape[0])
@@ -230,12 +232,13 @@ class ARGTestCase(ut.TestCase):
         vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
         uarg = np.linspace(.1, 10, 3) * 1j
 
-        results = argmodel.estimate_gmm(param_true.theta_vol, vol=vol,
+        results = argmodel.estimate_gmm(param_true.get_theta_vol(), vol=vol,
                                         uarg=uarg, zlag=2)
 
         self.assertIsInstance(results, Results)
         self.assertIsInstance(results.theta, np.ndarray)
-        self.assertEqual(results.theta.shape[0], param_true.theta_vol.shape[0])
+        self.assertEqual(results.theta.shape[0],
+                         param_true.get_theta_vol().shape[0])
 
 
 if __name__ == '__main__':

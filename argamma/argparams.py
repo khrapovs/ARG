@@ -22,8 +22,6 @@ class ARGparams(object):
     phi : float
     price_vol : float
     price_ret : float
-    theta_vol : array
-    theta_ret : array
 
     Raises
     ------
@@ -32,8 +30,7 @@ class ARGparams(object):
     """
     def __init__(self, scale=.001, rho=.9, delta=1.1,
                  tau1=.5, tau2=1, phi=-.5,
-                 price_vol=-10., price_ret=10.,
-                 theta_vol=None, theta_ret=None):
+                 price_vol=-10., price_ret=10.):
         """Initialize the class instance.
 
         Parameters
@@ -50,29 +47,15 @@ class ARGparams(object):
             Volatiltiy risk price
         price_ret : float
             Equity risk price
-        theta_vol : array
-            Parameters of the volatility model
-        theta_ret : array
-            Parameters of the return model
 
         """
-        if not theta_vol is None:
-            assert len(theta_vol) == 3, \
-                "Wrong number of parameters in theta_vol!"
-            [scale, rho, delta] = theta_vol
         # Volatililty parameters
         self.scale = scale
         self.rho = rho
         self.delta = delta
         assert scale > 0, "Scale must be greater than zero!"
         self.beta = self.rho / self.scale
-        # Parameters of the volatility model
-        self.theta_vol = np.array([scale, rho, delta])
 
-        if not theta_ret is None:
-            assert len(theta_ret) == 2, \
-                "Wrong number of parameters in theta_vol!"
-            [phi, price_ret] = theta_ret
         # Return parameters
         # Correlation between return and volatility (leverage)
         self.phi = phi
@@ -80,8 +63,51 @@ class ARGparams(object):
         self.price_vol = price_vol
         # Equity risk price
         self.price_ret = price_ret
-        # Parameters of the return model
-        self.theta_ret = np.array([phi, price_ret])
+
+    def update(self, theta_vol=None, theta_ret=None):
+        """Update model parameters from vectors.
+
+        Parameters
+        ----------
+        theta_vol : array
+            Parameters of the volatility model
+        theta_ret : array
+            Parameters of the return model
+
+        """
+
+        if theta_vol is not None:
+            assert len(theta_vol) == 3, \
+                "Wrong number of parameters in theta_vol!"
+            assert theta_vol[0] > 0, "Scale must be greater than zero!"
+            [self.scale, self.rho, self.delta] = theta_vol
+
+        if theta_ret is not None:
+            assert len(theta_ret) == 2, \
+                "Wrong number of parameters in theta_vol!"
+            [self.phi, self.price_ret] = theta_ret
+
+    def get_theta_vol(self):
+        """Get volatility parameters in a vector.
+
+        Returns
+        -------
+        (3,) array
+            Volatility parameters
+
+        """
+        return np.array([self.scale, self.rho, self.delta])
+
+    def get_theta_ret(self):
+        """Get return parameters in a vector.
+
+        Returns
+        -------
+        (2,) array
+            Volatility parameters
+
+        """
+        return np.array([self.phi, self.price_ret])
 
     def __str__(self):
         """This is what is shown when you print() the instance.

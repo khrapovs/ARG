@@ -88,6 +88,10 @@ class ARG(object):
         Simulate returns given volatility
     load_data
         Load data to the class
+    likelihood_vol
+        Log-likelihood for ARG(1) volatility model
+    likelihood_ret
+        Log-likelihood for return model
     estimate_mle
         Estimate model parameters via Maximum Likelihood
     momcond
@@ -468,10 +472,10 @@ class ARG(object):
 
         if model == 'vol':
             likelihood = self.likelihood_vol
-            theta_start = param_start.theta_vol
+            theta_start = param_start.get_theta_vol()
         elif model == 'ret':
             likelihood = self.likelihood_ret
-            theta_start = param_start.theta_ret
+            theta_start = param_start.get_theta_ret()
 
         results = minimize(likelihood, theta_start, method='L-BFGS-B',
                            jac=nd.Gradient(likelihood), options=options)
@@ -481,10 +485,11 @@ class ARG(object):
             / len(self.vol))**.5
         results.tstat = results.x / results.std_theta
 
+        param_final = ARGparams()
         if model == 'vol':
-            param_final = ARGparams(theta_vol=results.x)
+            param_final.update(theta_vol=results.x)
         elif model == 'ret':
-            param_final = ARGparams(theta_ret=results.x)
+            param_final.update(theta_ret=results.x)
 
         return param_final, results
 
@@ -504,7 +509,8 @@ class ARG(object):
         """
         if theta_vol.min() <= 0:
             return 1e10
-        param = ARGparams(theta_vol=theta_vol)
+        param = ARGparams()
+        param.update(theta_vol=theta_vol)
         degf = param.delta * 2
         nonc = param.rho * self.vol[:-1] / param.scale * 2
         logf = scs.ncx2.logpdf(self.vol[1:], degf, nonc, scale=param.scale/2)
@@ -525,8 +531,9 @@ class ARG(object):
 
         """
         [phi, price_ret] = theta_ret
-        [scale, rho, delta] = self.param.theta_vol
+        [scale, rho, delta] = self.param.get_theta_vol()
 
+        # TODO: replace with method calls
         a = lambda u: rho * u / (1 + scale * u)
         b = lambda u: delta * np.log(1 + scale * u)
 
@@ -586,7 +593,8 @@ class ARG(object):
             dmoment = np.ones((nmoms, nparams)) * 1e10
             return moment, dmoment
         # Change class attribute with the current theta
-        self.param = ARGparams(theta_vol=theta)
+        self.param = ARGparams()
+        self.param.update(theta_vol=theta)
 
         # Must be (nobs, nu) array
         exparg = - prevvol * self.afun(uarg)
@@ -637,7 +645,10 @@ class ARG(object):
 
         """
         estimator = GMM(self.momcond)
-        return estimator.gmmest(param_start, vol=vol, **kwargs)
+        results = estimator.gmmest(param_start, vol=vol, **kwargs)
+        param_final = ARGparams()
+        param_final.update(theta_vol=results.theta)
+        return param_final, results
 
 
 if __name__ == '__main__':
