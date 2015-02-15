@@ -507,13 +507,13 @@ class ARG(object):
             Value of the log-likelihood function
 
         """
-        if theta_vol.min() <= 0:
+        if theta_vol.min() <= 0 or theta_vol[0] <= 0:
             return 1e10
-        param = ARGparams()
-        param.update(theta_vol=theta_vol)
-        degf = param.delta * 2
-        nonc = param.rho * self.vol[:-1] / param.scale * 2
-        logf = scs.ncx2.logpdf(self.vol[1:], degf, nonc, scale=param.scale/2)
+        self.param.update(theta_vol=theta_vol)
+        degf = self.param.delta * 2
+        nonc = self.param.rho * self.vol[:-1] / self.param.scale * 2
+        scale = self.param.scale/2
+        logf = scs.ncx2.logpdf(self.vol[1:], degf, nonc, scale=scale)
         return -logf[~np.isnan(logf)].mean()
 
     def likelihood_ret(self, theta_ret):
@@ -533,10 +533,6 @@ class ARG(object):
         self.param.update(theta_ret=theta_ret)
         [phi, price_ret] = self.param.get_theta_ret()
         [scale, rho, delta] = self.param.get_theta_vol()
-
-        # TODO: replace with method calls
-#        a = lambda u: rho * u / (1 + scale * u)
-#        b = lambda u: delta * np.log(1 + scale * u)
 
         k = (scale * (1 + rho))**(-.5)
         psi = phi * k + (price_ret - .5) * (1 - phi**2)
@@ -590,13 +586,16 @@ class ARG(object):
         # Number of instruments
         nparams = theta.shape[0]
 
+        if theta[0] <= 0:
+            return np.ones((nobs, nmoms))*1e10, np.ones((nmoms, nparams))*1e10
+
+        # Change class attribute with the current theta
+        self.param.update(theta_vol=theta)
+
         if theta.min() <= 0:
             moment = np.ones((nobs, nmoms)) * 1e10
             dmoment = np.ones((nmoms, nparams)) * 1e10
             return moment, dmoment
-        # Change class attribute with the current theta
-        self.param = ARGparams()
-        self.param.update(theta_vol=theta)
 
         # Must be (nobs, nu) array
         exparg = - prevvol * self.afun(uarg)
