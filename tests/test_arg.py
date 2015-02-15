@@ -81,6 +81,11 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(param.get_theta(), np.ndarray)
         np.testing.assert_array_equal(param.get_theta(), theta_true)
 
+        theta_true = np.arange(5)
+        param.update(theta=theta_true)
+
+        np.testing.assert_array_equal(param.get_theta(), theta_true)
+
     def test_uncond_moments(self):
         """Test unconditional moments of the ARG model."""
 

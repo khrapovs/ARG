@@ -518,7 +518,7 @@ class ARG(object):
         elif model == 'ret':
             self.param.update(theta_ret=results.x)
         elif model == 'joint':
-            self.param.update(theta_vol=results.x[:3], theta_ret=results.x[3:])
+            self.param.update(theta=results.x)
         else:
             raise(ValueError, 'Model type not supported')
 
@@ -567,14 +567,12 @@ class ARG(object):
 
         psi = self.center() + (price_ret - .5) * (1 - phi**2)
 
-        vollag = lagmat(self.vol, 1).flatten()[1:]
-        vol, ret = self.vol[1:], self.ret[1:]
-
-        r_mean = psi * vol + self.afun(- self.center()) * vollag \
+        r_mean = psi * self.vol[1:] \
+            + self.afun(- self.center()) * self.vol[:-1] \
             + self.bfun(- self.center())
-        r_var = vol * (1 - phi**2)
+        r_var = self.vol[1:] * (1 - phi**2)
 
-        return - scs.norm.logpdf(ret, r_mean, np.sqrt(r_var)).mean()
+        return - scs.norm.logpdf(self.ret[1:], r_mean, np.sqrt(r_var)).mean()
 
     def likelihood_joint(self, theta):
         """Log-likelihood for joint model.

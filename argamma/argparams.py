@@ -64,7 +64,7 @@ class ARGparams(object):
         # Equity risk price
         self.price_ret = price_ret
 
-    def update(self, theta_vol=None, theta_ret=None):
+    def update(self, theta_vol=None, theta_ret=None, theta=None):
         """Update model parameters from vectors.
 
         Parameters
@@ -84,8 +84,14 @@ class ARGparams(object):
 
         if theta_ret is not None:
             assert len(theta_ret) == 2, \
-                "Wrong number of parameters in theta_vol!"
+                "Wrong number of parameters in theta_ret!"
             [self.phi, self.price_ret] = theta_ret
+
+        if theta is not None:
+            assert len(theta) == 5, \
+                "Wrong number of parameters in theta!"
+            [self.scale, self.rho, self.delta, self.phi, self.price_ret] \
+                = theta
 
     def get_theta_vol(self):
         """Get volatility parameters in a vector.
