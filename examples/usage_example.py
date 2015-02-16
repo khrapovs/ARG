@@ -69,7 +69,7 @@ def estimate_mle_vol():
 
     print('True parameter:', param_true)
     print('Final parameter: ', param_final)
-    print(type(results))
+    print(results)
 
     return param_final, results
 
@@ -88,7 +88,8 @@ def estimate_mle_ret():
     argmodel = ARG(param=param_true)
     nsim, nobs = 1, 500
     vol = argmodel.vsim(nsim=nsim, nobs=nobs)
-    ret = argmodel.rsim(vol=vol).flatten()
+    argmodel.load_data(vol=vol)
+    ret = argmodel.rsim().flatten()
     vol = vol.flatten()
     argmodel.load_data(vol=vol, ret=ret)
 
@@ -97,6 +98,11 @@ def estimate_mle_ret():
 
     pfinal_ret, results_ret = argmodel.estimate_mle(param_start=pfinal_vol,
                                                     model='ret')
+
+    print(results_vol)
+    print(results_ret)
+    print(pfinal_vol.get_theta_vol())
+    print(pfinal_ret.get_theta_ret())
 
     return pfinal_vol, pfinal_ret, results_vol, results_ret
 
@@ -149,21 +155,13 @@ def estimate_gmm():
 if __name__ == '__main__':
 
     #play_with_arg()
-    #try_simulation()
+#    try_simulation()
 
 #    param_final, results = estimate_mle_vol()
-#    print(results.x)
-#    print(results.std_theta)
-#    print(results.tstat)
 
 #    pfinal_vol, pfinal_ret, results_vol, results_ret = estimate_mle_ret()
-#
-#    print(results_vol)
-#    print(results_ret)
-#    print(pfinal_vol.get_theta_vol())
-#    print(pfinal_ret.get_theta_ret())
 
     pfinal, results = estimate_mle_joint()
-#
+
 #    estimate_gmm()
-#
+

@@ -428,15 +428,15 @@ class ARG(object):
 
         Returns
         -------
-        (nsim, nobs) array
+        (nobs, nsim) array
             Simulated data
 
         """
-        vol = np.empty((nsim, nobs))
-        vol[:, 0] = self.umean()
+        vol = np.empty((nobs, nsim))
+        vol[0] = self.umean()
         for i in range(1, nobs):
-            temp = np.random.poisson(self.param.beta * vol[:, i-1])
-            vol[:, i] = self.param.scale \
+            temp = np.random.poisson(self.param.beta * vol[i-1])
+            vol[i] = self.param.scale \
                 * np.random.gamma(self.param.delta + temp)
         return vol
 
@@ -454,16 +454,16 @@ class ARG(object):
 
         Returns
         -------
-        (nsim, nobs) array
+        (nobs, nsim) array
             Simulated data
 
         """
-        vol = np.empty((nsim, nobs))
-        vol[:, 0] = self.umean()
+        vol = np.empty((nobs, nsim))
+        vol[0] = self.umean()
         for i in range(1, nobs):
             df = self.param.delta * 2
-            nc = self.param.rho * vol[:, i-1]
-            vol[:, i] = scs.ncx2.rvs(df, nc, size=nsim)
+            nc = self.param.rho * vol[i-1]
+            vol[i] = scs.ncx2.rvs(df, nc, size=nsim)
         return vol * self.param.scale / 2
 
     def ret_cmean(self):
@@ -471,7 +471,7 @@ class ARG(object):
 
         Returns
         -------
-        (nsim, nobs) array
+        (nobs, nsim) array
             Conditional mean
 
         """
@@ -480,14 +480,14 @@ class ARG(object):
         B1 = float(self.beta(u).diff(u, 1).subs(u, 0))
         C1 = float(self.gamma(u).diff(u, 1).subs(u, 0))
         vol = np.atleast_2d(self.vol)
-        return A1 * vol[:, 1:] + B1 * vol[:, :-1] + C1
+        return A1 * self.vol[1:] + B1 * self.vol[:-1] + C1
 
     def ret_cvar(self):
         """Conditional variance of return.
 
         Returns
         -------
-        (nsim, nobs) array
+        (nobs, nsim) array
             Conditional mean
 
         """
@@ -496,21 +496,21 @@ class ARG(object):
         B2 = float(-self.beta(u).diff(u, 2).subs(u, 0))
         C2 = float(-self.gamma(u).diff(u, 2).subs(u, 0))
         vol = np.atleast_2d(self.vol)
-        return A2 * vol[:, 1:] + B2 * vol[:, :-1] + C2
+        return A2 * self.vol[1:] + B2 * self.vol[:-1] + C2
 
     def rsim(self):
         """Simulate returns given ARG(1) process for volatility.
 
         Returns
         -------
-        (nsim, nobs) array
+        (nobs, nsim) array
             Simulated data
 
         """
         # simulate returns
         ret = self.ret_cmean() + self.ret_cvar()**.5 \
-            * np.random.normal(size=self.vol[:, 1:].shape)
-        return np.hstack((np.zeros((self.vol.shape[0], 1)), ret))
+            * np.random.normal(size=self.vol[1:].shape)
+        return np.vstack((np.zeros((1, self.vol.shape[1])), ret))
 
 
     def vsim_last(self, **args):
@@ -530,13 +530,13 @@ class ARG(object):
             if intermediate values were not created.
 
         """
-        return self.vsim(**args)[:, -1]
+        return self.vsim(**args)[-1]
 
     def plot_vsim(self):
         """Plot simulated ARG process."""
 
         np.random.seed(seed=1)
-        vol = self.vsim2(nsim=2)
+        vol = self.vsim2(nsim=2).T
         plt.figure(figsize=(8, 4))
         for voli in vol:
             plt.plot(voli)
@@ -644,8 +644,10 @@ class ARG(object):
             Value of the log-likelihood function
 
         """
-        r_mean = self.ret_cmean().flatten()
-        r_var = self.ret_cvar().flatten()
+        self.param.update(theta_ret=theta_ret)
+
+        r_mean = self.ret_cmean()
+        r_var = self.ret_cvar()
 
         return - scs.norm.logpdf(self.ret[1:], r_mean, np.sqrt(r_var)).mean()
 

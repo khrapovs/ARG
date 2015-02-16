@@ -199,11 +199,11 @@ class ARGTestCase(ut.TestCase):
 
         shapes = []
         nsim, nobs = 1, 1
-        shapes.append((nsim, nobs))
+        shapes.append((nobs, nsim))
         nsim, nobs = 2, 2
-        shapes.append((nsim, nobs))
+        shapes.append((nobs, nsim))
         nsim, nobs = int(1e3), int(1e3)
-        shapes.append((nsim, nobs))
+        shapes.append((nobs, nsim))
 
         for shape in shapes:
             nsim, nobs = shape
