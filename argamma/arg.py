@@ -586,7 +586,7 @@ class ARG(object):
             likelihood = self.likelihood_joint
             theta_start = param_start.get_theta()
         else:
-            raise(ValueError, 'Model type not supported')
+            raise ValueError('Model type not supported')
 
         results = minimize(likelihood, theta_start, method='L-BFGS-B',
                            options=options)
@@ -603,7 +603,7 @@ class ARG(object):
         elif model == 'joint':
             self.param.update(theta=results.x)
         else:
-            raise(ValueError, 'Model type not supported')
+            raise ValueError('Model type not supported')
 
         return self.param, results
 
@@ -669,15 +669,13 @@ class ARG(object):
         except ValueError:
             return 1e10
 
-    def momcond(self, theta, vol=None, uarg=None, zlag=1):
+    def momcond(self, theta, uarg=None, zlag=1):
         """Moment conditions for spectral GMM estimator.
 
         Parameters
         ----------
         theta : (3, ) array
             Vector of model parameters. [scale, rho, delta]
-        vol : (nobs, ) array
-            Volatility time series
         uarg : (nu, ) array
             Grid to evaluate a and b functions
         zlag : int
@@ -699,7 +697,8 @@ class ARG(object):
         if uarg is None:
             raise ValueError("uarg is missing!")
 
-        vollag, vol = lagmat(vol, maxlag=zlag, original='sep', trim='both')
+        vollag, vol = lagmat(self.vol, maxlag=zlag,
+                             original='sep', trim='both')
         prevvol = vollag[:, 0][:, np.newaxis]
         # Number of observations after truncation
         nobs = vol.shape[0]
@@ -747,15 +746,13 @@ class ARG(object):
 
         return moment, dmoment
 
-    def estimate_gmm(self, param_start=None, vol=None, **kwargs):
+    def estimate_gmm(self, param_start=None, **kwargs):
         """Estimate model parameters using GMM.
 
         Parameters
         ----------
         param_start : ARGparams instance
             Starting value for optimization
-        vol : (nobs, ) array
-            Volatility time series
         uarg : array
             Grid to evaluate a and b functions
         zlag : int, optional
@@ -768,7 +765,7 @@ class ARG(object):
 
         """
         estimator = GMM(self.momcond)
-        results = estimator.gmmest(param_start, vol=vol, **kwargs)
+        results = estimator.gmmest(param_start, **kwargs)
         param_final = ARGparams()
         param_final.update(theta_vol=results.theta)
         return param_final, results

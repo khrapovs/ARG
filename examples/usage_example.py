@@ -137,8 +137,8 @@ def estimate_gmm():
     vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
     argmodel.load_data(vol=vol)
     uarg = np.linspace(.1, 10, 3) * 1j
-    param_final, results = argmodel.estimate_gmm(
-        param_start=param_true.get_theta_vol(), vol=vol, uarg=uarg, zlag=2)
+    param_final, results = argmodel.estimate_gmm(uarg=uarg, zlag=2,
+        param_start=param_true.get_theta_vol())
 
     print('True parameter:', param_true)
     print('Final parameter: ', param_final)
