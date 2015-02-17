@@ -55,8 +55,6 @@ class ARG(object):
 
     Attributes
     ----------
-    param : ARGparams instance
-        Parameters of the model
     vol : (nobs, ) array
         Volatility time series
     ret : (nobs, ) array
@@ -99,22 +97,20 @@ class ARG(object):
 
     """
 
-    def __init__(self, param=None):
+    def __init__(self, vol=None, ret=None):
         """Initialize class instance.
+
+        """
+        self.vol = vol
+        self.ret = ret
+
+    def convert_to_q(self, param):
+        """Convert physical (P) parameters to risk-neutral (Q) parameters.
 
         Parameters
         ----------
         param : ARGparams instance
-            Parameter object
-
-        """
-        #super(ARG, self).__init__()
-        self.param = param
-        self.vol = None
-        self.ret = None
-
-    def convert_to_q(self):
-        """Convert physical (P) parameters to risk-neutral (Q) parameters.
+            Physical (P) parameters
 
         Returns
         -------
@@ -122,14 +118,16 @@ class ARG(object):
             Risk-neutral parameters
 
         """
-        factor = 1/(1 + self.param.scale \
-            * (self.param.price_vol + self.alpha(self.param.price_ret)))
-        if factor <= 0:
+        factor = 1/(1 + param.scale \
+            * (param.price_vol + self.alpha(param.price_ret, param)))
+        if factor <= 0 or param.get_theta_vol().min() <= 0:
             raise ValueError('Invalid parameters in Q conversion!')
-        scale = self.param.scale * factor
-        beta = self.param.beta * factor
+        scale = param.scale * factor
+        beta = param.beta * factor
         rho = scale * beta
-        return ARGparams(scale=scale, rho=rho, delta=self.param.delta)
+        param = ARGparams()
+        param.update(theta_vol=[scale, rho, param.delta])
+        return param
 
     def load_data(self, vol=None, ret=None):
         """Load data into the model object.
@@ -147,7 +145,7 @@ class ARG(object):
         if ret is not None:
             self.ret = ret
 
-    def afun(self, uarg):
+    def afun(self, uarg, param):
         r"""Function a().
 
         .. math::
@@ -157,6 +155,9 @@ class ARG(object):
         Parameters
         ----------
         uarg : array
+            Grid
+        param : ARGparams instance
+            Model parameters
 
         Returns
         -------
@@ -164,9 +165,9 @@ class ARG(object):
             Same dimension as uarg
 
         """
-        return self.param.rho * uarg / (1 + self.param.scale * uarg)
+        return param.rho * uarg / (1 + param.scale * uarg)
 
-    def bfun(self, uarg):
+    def bfun(self, uarg, param):
         r"""Function b().
 
         .. math::
@@ -175,6 +176,9 @@ class ARG(object):
         Parameters
         ----------
         uarg : array
+            Grid
+        param : ARGparams instance
+            Model parameters
 
         Returns
         -------
@@ -182,14 +186,17 @@ class ARG(object):
             Same dimension as uarg
 
         """
-        return self.param.delta * np.log(1 + self.param.scale * uarg)
+        return param.delta * np.log(1 + param.scale * uarg)
 
-    def afun_q(self, uarg):
+    def afun_q(self, uarg, param):
         r"""Risk-neutral function a().
 
         Parameters
         ----------
         uarg : array
+            Grid
+        param : ARGparams instance
+            Model parameters
 
         Returns
         -------
@@ -197,15 +204,17 @@ class ARG(object):
             Same dimension as uarg
 
         """
-        argmodel_q = ARG(param=self.convert_to_q())
-        return argmodel_q.afun(uarg)
+        return self.afun(uarg, self.convert_to_q(param))
 
-    def bfun_q(self, uarg):
+    def bfun_q(self, uarg, param):
         r"""Risk-neutral function b().
 
         Parameters
         ----------
         uarg : array
+            Grid
+        param : ARGparams instance
+            Model parameters
 
         Returns
         -------
@@ -213,10 +222,9 @@ class ARG(object):
             Same dimension as uarg
 
         """
-        argmodel_q = ARG(param=self.convert_to_q())
-        return argmodel_q.bfun(uarg)
+        return self.bfun(uarg, self.convert_to_q(param))
 
-    def dafun(self, uarg):
+    def dafun(self, uarg, param):
         r"""Derivative of function a() with respect to scale, rho, and delta.
 
         .. math::
@@ -230,18 +238,21 @@ class ARG(object):
         Parameters
         ----------
         uarg : (nu, ) array
+            Grid
+        param : ARGparams instance
+            Model parameters
 
         Returns
         -------
         (3, nu) array
 
         """
-        da_scale = -self.param.rho * uarg**2 / (self.param.scale*uarg + 1)**2
-        da_rho = uarg / (self.param.scale*uarg + 1)
+        da_scale = -param.rho * uarg**2 / (param.scale*uarg + 1)**2
+        da_rho = uarg / (param.scale*uarg + 1)
         da_delta = np.zeros_like(uarg)
         return np.vstack((da_scale, da_rho, da_delta))
 
-    def dbfun(self, uarg):
+    def dbfun(self, uarg, param):
         r"""Derivative of function b() with respect to scale, rho, and delta.
 
         .. math::
@@ -255,18 +266,21 @@ class ARG(object):
         Parameters
         ----------
         uarg : (nu, ) array
+            Grid
+        param : ARGparams instance
+            Model parameters
 
         Returns
         -------
         (3, nu) array
 
         """
-        db_scale = self.param.delta * uarg / (1 + self.param.scale * uarg)
+        db_scale = param.delta * uarg / (1 + param.scale * uarg)
         db_rho = np.zeros_like(uarg)
-        db_delta = np.log(1 + self.param.scale * uarg)
+        db_delta = np.log(1 + param.scale * uarg)
         return np.vstack((db_scale, db_rho, db_delta))
 
-    def cfun(self, uarg):
+    def cfun(self, uarg, param):
         r"""Function c().
 
         .. math::
@@ -275,6 +289,9 @@ class ARG(object):
         Parameters
         ----------
         uarg : array
+            Grid
+        param : ARGparams instance
+            Model parameters
 
         Returns
         -------
@@ -282,11 +299,15 @@ class ARG(object):
             Same dimension as uarg
 
         """
-        return self.param.delta \
-            * np.log(1 + self.param.scale * uarg / (1-self.param.rho))
+        return param.delta * np.log(1 + param.scale * uarg / (1-param.rho))
 
-    def center(self):
+    def center(self, param):
         """No-arb restriction parameter.
+
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
 
         Returns
         -------
@@ -294,14 +315,17 @@ class ARG(object):
             Same dimension as uarg
 
         """
-        return self.param.phi / (self.param.scale * (1 + self.param.rho))**.5
+        return param.phi / (param.scale * (1 + param.rho))**.5
 
-    def alpha(self, uarg):
+    def alpha(self, uarg, param):
         """Function alpha().
 
         Parameters
         ----------
         uarg : array
+            Grid
+        param : ARGparams instance
+            Model parameters
 
         Returns
         -------
@@ -309,15 +333,18 @@ class ARG(object):
             Same dimension as uarg
 
         """
-        return ((self.param.price_ret-.5) * (1-self.param.phi**2) \
-            + self.center()) * uarg - .5 * uarg**2 * (1 - self.param.phi**2)
+        return ((param.price_ret-.5) * (1-param.phi**2) \
+            + self.center(param)) * uarg - .5 * uarg**2 * (1 - param.phi**2)
 
-    def beta(self, uarg):
+    def beta(self, uarg, param):
         """Function beta().
 
         Parameters
         ----------
         uarg : array
+            Grid
+        param : ARGparams instance
+            Model parameters
 
         Returns
         -------
@@ -325,14 +352,17 @@ class ARG(object):
             Same dimension as uarg
 
         """
-        return uarg * self.afun_q(- self.center())
+        return uarg * self.afun(- self.center(param), param)
 
-    def gamma(self, uarg):
+    def gamma(self, uarg, param):
         """Function gamma().
 
         Parameters
         ----------
         uarg : array
+            Grid
+        param : ARGparams instance
+            Model parameters
 
         Returns
         -------
@@ -340,69 +370,84 @@ class ARG(object):
             Same dimension as uarg
 
         """
-        return uarg * self.bfun_q(- self.center())
+        return uarg * self.bfun(- self.center(param), param)
 
-    def umean(self):
+    def umean(self, param):
         r"""Unconditional mean of the volatility process.
 
         .. math::
             E\left[Y_{t}\right]=\frac{c\delta}{1-\rho}
 
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
+
         Returns
         -------
         float
 
         """
-        return self.param.scale * self.param.delta / (1 - self.param.rho)
+        return param.scale * param.delta / (1 - param.rho)
 
-    def uvar(self):
+    def uvar(self, param):
         r"""Unconditional variance of the volatility process.
 
         .. math::
             V\left[Y_{t}\right]=\frac{c^{2}\delta}{\left(1-\rho\right)^{2}}
 
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
+
         Returns
         -------
         float
 
         """
-        return self.umean() / self.param.delta
+        return self.umean(param) / param.delta
 
-    def ustd(self):
+    def ustd(self, param):
         r"""Unconditional standard deviation of the volatility process.
 
         .. math::
             \sqrt{V\left[Y_{t}\right]}
 
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
+
         Returns
         -------
         float
 
         """
-        return self.uvar() ** .5
+        return self.uvar(param) ** .5
 
-    def plot_abc(self, uarg):
+    def plot_abc(self, uarg, param):
         """Plot a() and b() functions on the same plot.
 
         """
         plt.figure(figsize=(8, 4))
 
         plt.subplot(1, 3, 1)
-        plt.plot(uarg, self.afun(uarg))
+        plt.plot(uarg, self.afun(uarg, param))
         plt.axhline(0)
         plt.axvline(0)
         plt.ylabel('$a(u)$')
         plt.xlabel('$u$')
 
         plt.subplot(1, 3, 2)
-        plt.plot(uarg, self.bfun(uarg))
+        plt.plot(uarg, self.bfun(uarg, param))
         plt.axhline(0)
         plt.axvline(0)
         plt.ylabel('$b(u)$')
         plt.xlabel('$u$')
 
         plt.subplot(1, 3, 3)
-        plt.plot(uarg, self.cfun(uarg))
+        plt.plot(uarg, self.cfun(uarg, param))
         plt.axhline(0)
         plt.axvline(0)
         plt.ylabel('$c(u)$')
@@ -435,11 +480,10 @@ class ARG(object):
 
         """
         vol = np.empty((nobs, nsim))
-        vol[0] = self.umean()
+        vol[0] = self.umean(param)
         for i in range(1, nobs):
-            temp = np.random.poisson(self.param.beta * vol[i-1])
-            vol[i] = self.param.scale \
-                * np.random.gamma(self.param.delta + temp)
+            temp = np.random.poisson(param.beta * vol[i-1])
+            vol[i] = param.scale * np.random.gamma(param.delta + temp)
         return vol
 
     def vsim2(self, nsim=1, nobs=int(1e2), param=None):
@@ -461,16 +505,37 @@ class ARG(object):
 
         """
         vol = np.empty((nobs, nsim))
-        vol[0] = self.umean()
+        vol[0] = self.umean(param)
         for i in range(1, nobs):
-            df = self.param.delta * 2
-            nc = self.param.rho * vol[i-1]
+            df = param.delta * 2
+            nc = param.rho * vol[i-1]
             vol[i] = scs.ncx2.rvs(df, nc, size=nsim)
-        return vol * self.param.scale / 2
+        return vol * param.scale / 2
 
-    def ret_cmean(self):
+    def vol_cmean(self, param):
+        """Conditional mean of volatility.
+
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        (nobs, nsim) array
+            Conditional mean
+
+        """
+        return param.rho * self.vol[1:] + param.delta * param.scale
+
+    def ret_cmean(self, param):
         """Conditional mean of return.
 
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
+
         Returns
         -------
         (nobs, nsim) array
@@ -478,14 +543,18 @@ class ARG(object):
 
         """
         u = sp.Symbol('u')
-        A1 = float(self.alpha(u).diff(u, 1).subs(u, 0))
-        B1 = float(self.beta(u).diff(u, 1).subs(u, 0))
-        C1 = float(self.gamma(u).diff(u, 1).subs(u, 0))
-        vol = np.atleast_2d(self.vol)
+        A1 = float(self.alpha(u, param).diff(u, 1).subs(u, 0))
+        B1 = float(self.beta(u, param).diff(u, 1).subs(u, 0))
+        C1 = float(self.gamma(u, param).diff(u, 1).subs(u, 0))
         return A1 * self.vol[1:] + B1 * self.vol[:-1] + C1
 
-    def ret_cvar(self):
+    def ret_cvar(self, param):
         """Conditional variance of return.
+
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
 
         Returns
         -------
@@ -494,14 +563,18 @@ class ARG(object):
 
         """
         u = sp.Symbol('u')
-        A2 = float(-self.alpha(u).diff(u, 2).subs(u, 0))
-        B2 = float(-self.beta(u).diff(u, 2).subs(u, 0))
-        C2 = float(-self.gamma(u).diff(u, 2).subs(u, 0))
-        vol = np.atleast_2d(self.vol)
+        A2 = float(-self.alpha(u, param).diff(u, 2).subs(u, 0))
+        B2 = float(-self.beta(u, param).diff(u, 2).subs(u, 0))
+        C2 = float(-self.gamma(u, param).diff(u, 2).subs(u, 0))
         return A2 * self.vol[1:] + B2 * self.vol[:-1] + C2
 
-    def rsim(self):
+    def rsim(self, param=None):
         """Simulate returns given ARG(1) process for volatility.
+
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
 
         Returns
         -------
@@ -511,7 +584,7 @@ class ARG(object):
         """
         # simulate returns
         ret = np.zeros_like(self.vol)
-        ret[1:] = self.ret_cmean() + self.ret_cvar()**.5 \
+        ret[1:] = self.ret_cmean(param) + self.ret_cvar(param)**.5 \
             * np.random.normal(size=self.vol[1:].shape)
         return ret
 
@@ -534,21 +607,21 @@ class ARG(object):
         """
         return self.vsim(**args)[-1]
 
-    def plot_vsim(self):
+    def plot_vsim(self, param=None):
         """Plot simulated ARG process."""
 
         np.random.seed(seed=1)
-        vol = self.vsim2(nsim=2).T
+        vol = self.vsim2(nsim=2, param=param).T
         plt.figure(figsize=(8, 4))
         for voli in vol:
             plt.plot(voli)
         plt.show()
 
-    def plot_vlast_density(self, nsim=100, nobs=100):
+    def plot_vlast_density(self, nsim=100, nobs=100, param=None):
         """Plot the marginal density of ARG process."""
 
         plt.figure(figsize=(8, 4))
-        vol = self.vsim_last(nsim=int(nsim), nobs=int(nobs))
+        vol = self.vsim_last(nsim=int(nsim), nobs=int(nobs), param=param)
         sns.distplot(vol, rug=True, hist=False)
         plt.show()
 
@@ -582,7 +655,8 @@ class ARG(object):
             likelihood = self.likelihood_vol
             theta_start = param_start.get_theta_vol()
         elif model == 'ret':
-            likelihood = self.likelihood_ret
+            likelihood = lambda x: \
+                self.likelihood_ret(x, param_start.get_theta_vol())
             theta_start = param_start.get_theta_ret()
         elif model == 'joint':
             likelihood = self.likelihood_joint
@@ -598,16 +672,17 @@ class ARG(object):
             / len(self.vol))**.5
         results.tstat = results.x / results.std_theta
 
+        param_final = ARGparams()
         if model == 'vol':
-            self.param.update(theta_vol=results.x)
+            param_final.update(theta_vol=results.x)
         elif model == 'ret':
-            self.param.update(theta_ret=results.x)
+            param_final.update(theta_ret=results.x)
         elif model == 'joint':
-            self.param.update(theta=results.x)
+            param_final.update(theta=results.x)
         else:
             raise ValueError('Model type not supported')
 
-        return self.param, results
+        return param_final, results
 
     def likelihood_vol(self, theta_vol):
         """Log-likelihood for ARG(1) volatility model.
@@ -623,33 +698,41 @@ class ARG(object):
             Value of the log-likelihood function
 
         """
-        if theta_vol.min() <= 0 or theta_vol[0] <= 0:
+        param = ARGparams()
+        try:
+            param.update(theta_vol=theta_vol)
+        except ValueError:
             return 1e10
-        self.param.update(theta_vol=theta_vol)
-        degf = self.param.delta * 2
-        nonc = self.param.rho * self.vol[:-1] / self.param.scale * 2
-        scale = self.param.scale/2
+        degf = param.delta * 2
+        nonc = param.rho * self.vol[:-1] / param.scale * 2
+        scale = param.scale/2
         logf = scs.ncx2.logpdf(self.vol[1:], degf, nonc, scale=scale)
         return -logf[~np.isnan(logf)].mean()
 
-    def likelihood_ret(self, theta_ret):
+    def likelihood_ret(self, theta_ret, theta_vol):
         """Log-likelihood for return model.
 
         Parameters
         ----------
-        theta : array_like
+        theta_ret : array_like
             Model parameters. [phi, price_ret]
+        theta_vol : array_like
+            Volatility model parameters. [phi, price_ret]
 
         Returns
         -------
-        logf : float
+        float
             Value of the log-likelihood function
 
         """
-        self.param.update(theta_ret=theta_ret)
+        param = ARGparams()
+        try:
+            param.update(theta_ret=theta_ret, theta_vol=theta_vol)
+        except ValueError:
+            return 1e10
 
-        r_mean = self.ret_cmean()
-        r_var = self.ret_cvar()
+        r_mean = self.ret_cmean(param)
+        r_var = self.ret_cvar(param)
 
         return - scs.norm.logpdf(self.ret[1:], r_mean, np.sqrt(r_var)).mean()
 
@@ -663,22 +746,20 @@ class ARG(object):
 
         Returns
         -------
-        logf : float
+        float
             Value of the log-likelihood function
 
         """
-        try:
-            return self.likelihood_vol(theta[:3]) \
-                + self.likelihood_ret(theta[3:])
-        except ValueError:
-            return 1e10
+        theta_vol, theta_ret = theta[:3], theta[3:]
+        return self.likelihood_vol(theta_vol) \
+            + self.likelihood_ret(theta_ret, theta_vol)
 
-    def momcond_vol(self, theta, uarg=None, zlag=1):
+    def momcond_vol(self, theta_vol, uarg=None, zlag=1):
         """Moment conditions (volatility) for spectral GMM estimator.
 
         Parameters
         ----------
-        theta : (3, ) array
+        theta_vol : (3, ) array
             Vector of model parameters. [scale, rho, delta]
         uarg : (nu, ) array
             Grid to evaluate a and b functions
@@ -707,23 +788,24 @@ class ARG(object):
         # Number of observations after truncation
         nobs = vol.shape[0]
         # Number of moments
-        nmoms = 2 * uarg.shape[0] * zlag
+        nmoms = 2 * uarg.shape[0] * (zlag+1)
         # Number of parameters
-        nparams = theta.shape[0]
-
-        if theta.min() <= 0:
-            return np.ones((nobs, nmoms))*1e10, np.ones((nmoms, nparams))*1e10
+        nparams = theta_vol.shape[0]
 
         # Change class attribute with the current theta
-        self.param.update(theta_vol=theta)
+        param = ARGparams()
+        try:
+            param.update(theta_vol=theta_vol)
+        except ValueError:
+            return np.ones((nobs, nmoms))*1e10, np.ones((nmoms, nparams))*1e10
 
         # Must be (nobs, nu) array
-        exparg = - prevvol * self.afun(uarg)
-        exparg -= np.ones((nobs, 1)) * self.bfun(uarg)
+        exparg = - prevvol * self.afun(uarg, param)
+        exparg -= np.ones((nobs, 1)) * self.bfun(uarg, param)
         # Must be (nobs, nu) array
         error = np.exp(-vol * uarg) - np.exp(exparg)
         # Instruments, (nobs, ninstr) array
-        instr = np.exp(-1j * vollag)
+        instr = np.hstack([np.exp(-1j * vollag), np.ones((nobs, 1))])
         # Must be (nobs, nmoms) array
         moment = error[:, np.newaxis, :] * instr[:, :, np.newaxis]
         moment = moment.reshape((nobs, nmoms/2))
@@ -733,8 +815,8 @@ class ARG(object):
         # Initialize derivative matrix
         dmoment = np.empty((nmoms, nparams))
         for i in range(nparams):
-            dexparg = - prevvol * self.dafun(uarg)[i]
-            dexparg -= np.ones((nobs, 1)) * self.dbfun(uarg)[i]
+            dexparg = - prevvol * self.dafun(uarg, param)[i]
+            dexparg -= np.ones((nobs, 1)) * self.dbfun(uarg, param)[i]
             derror = - np.exp(exparg) * dexparg
 
             derrorinstr = derror[:, np.newaxis, :] * instr[:, :, np.newaxis]
@@ -745,13 +827,15 @@ class ARG(object):
 
         return moment, dmoment
 
-    def moment_ret(self, theta, uarg=None, zlag=1):
+    def moment_ret(self, theta_ret, theta_vol=None, uarg=None, zlag=1):
         """Moment conditions (returns) for spectral GMM estimator.
 
         Parameters
         ----------
-        theta : (2, ) array
+        theta_ret : (2, ) array
             Vector of model parameters. [phi, price_ret]
+        theta_vol : (3, ) array
+            Vector of model parameters. [scale, rho, delta]
         uarg : (nu, ) array
             Grid to evaluate a and b functions
         zlag : int
@@ -761,8 +845,6 @@ class ARG(object):
         -------
         moment : (nobs, nmoms) array
             Matrix of momcond restrictions
-        dmoment : (nmoms, nparams) array
-            Gradient of momcond restrictions. Mean over observations
 
         Raises
         ------
@@ -779,20 +861,24 @@ class ARG(object):
         # Number of observations after truncation
         nobs = vol.shape[0]
         # Number of moments
-        nmoms = 2 * uarg.shape[0] * zlag
+        nmoms = 2 * uarg.shape[0] * (zlag+1)
         # Change class attribute with the current theta
-        self.param.update(theta_ret=theta)
+        param = ARGparams()
+        try:
+            param.update(theta_ret=theta_ret, theta_vol=theta_vol)
+        except ValueError:
+            return np.ones((nobs, nmoms))*1e10
         # Must be (nobs, nu) array
         try:
-            exparg = -vol * self.alpha(uarg) \
-                - prevvol * self.beta(uarg) \
-                - np.ones((nobs, 1)) * self.gamma(uarg)
+            exparg = -vol * self.alpha(uarg, param) \
+                - prevvol * self.beta(uarg, param) \
+                - np.ones((nobs, 1)) * self.gamma(uarg, param)
         except ValueError:
             return np.ones((nobs, nmoms))*1e10
         # Must be (nobs, nu) array
         error = np.exp(-self.ret[zlag:, np.newaxis] * uarg) - np.exp(exparg)
         # Instruments, (nobs, ninstr) array
-        instr = np.exp(-1j * vollag)
+        instr = np.hstack([np.exp(-1j * vollag), np.ones((nobs, 1))])
         # Must be (nobs, nmoms) array
         moment = error[:, np.newaxis, :] * instr[:, :, np.newaxis]
         moment = moment.reshape((nobs, nmoms/2))
@@ -801,14 +887,127 @@ class ARG(object):
 
         return moment
 
-    def momcond_ret(self, theta, uarg=None, zlag=1):
-        return self.moment_ret(theta, uarg=uarg, zlag=zlag), \
-            self.dmoment_ret(theta, uarg=uarg, zlag=zlag)
+    def momcond_ret(self, theta_ret, theta_vol=None, uarg=None, zlag=1):
+        """Moment conditions (returns) for spectral GMM estimator.
 
-    def dmoment_ret(self, theta, uarg=None, zlag=1):
-        mom = lambda theta: self.moment_ret(theta, uarg=uarg,
-                                            zlag=zlag).mean(0)
+        Parameters
+        ----------
+        theta_ret : (2, ) array
+            Vector of model parameters. [phi, price_ret]
+        theta_vol : (3, ) array
+            Vector of model parameters. [scale, rho, delta]
+        uarg : (nu, ) array
+            Grid to evaluate a and b functions
+        zlag : int
+            Number of lags to use for the instrument
+
+        Returns
+        -------
+        moment : (nobs, nmoms) array
+            Matrix of momcond restrictions
+        dmoment : (nmoms, nparams) array
+            Gradient of momcond restrictions. Mean over observations
+
+        """
+        mom = self.moment_ret(theta_ret, theta_vol=theta_vol,
+                              uarg=uarg, zlag=zlag)
+        dmom = self.dmoment_ret(theta_ret, theta_vol=theta_vol,
+                                uarg=uarg, zlag=zlag)
+        return mom, dmom
+
+    def dmoment_ret(self, theta_ret, theta_vol=None, uarg=None, zlag=1):
+        """Derivative of moments (returns) for spectral GMM estimator.
+
+        Parameters
+        ----------
+        theta_ret : (2, ) array
+            Vector of model parameters. [phi, price_ret]
+        theta_vol : (3, ) array
+            Vector of model parameters. [scale, rho, delta]
+        uarg : (nu, ) array
+            Grid to evaluate a and b functions
+        zlag : int
+            Number of lags to use for the instrument
+
+        Returns
+        -------
+        (nmoms, nparams) array
+            Gradient of moment restrictions. Mean over observations
+
+        """
+        mom = lambda theta: self.moment_ret(theta, theta_vol=theta_vol,
+                                            uarg=uarg, zlag=zlag).mean(0)
+        return nd.Jacobian(mom)(theta_ret)
+
+    def moment_joint(self, theta, uarg=None, zlag=1):
+        """Moment conditions (joint) for spectral GMM estimator.
+
+        Parameters
+        ----------
+        theta : (5, ) array
+            Vector of model parameters. [phi, price_ret]
+        uarg : (nu, ) array
+            Grid to evaluate a and b functions
+        zlag : int
+            Number of lags to use for the instrument
+
+        Returns
+        -------
+        moment : (nobs, nmoms) array
+            Matrix of momcond restrictions
+
+        """
+        theta_vol, theta_ret = theta[:3], theta[3:]
+        mom_vol = self.momcond_vol(theta_vol, uarg=uarg, zlag=zlag)[0]
+        mom_ret = self.moment_ret(theta_ret, theta_vol=theta_vol,
+                                  uarg=uarg, zlag=zlag)
+        return np.hstack([mom_vol, mom_ret])
+
+    def dmoment_joint(self, theta, uarg=None, zlag=1):
+        """Derivative of moment conditions (joint) for spectral GMM estimator.
+
+        Parameters
+        ----------
+        theta : (5, ) array
+            Vector of model parameters. [phi, price_ret]
+        uarg : (nu, ) array
+            Grid to evaluate a and b functions
+        zlag : int
+            Number of lags to use for the instrument
+
+        Returns
+        -------
+        (nmoms, nparams) array
+            Gradient of moment restrictions. Mean over observations
+
+        """
+        mom = lambda theta: self.moment_joint(theta, uarg=uarg,
+                                              zlag=zlag).mean(0)
         return nd.Jacobian(mom)(theta)
+
+    def momcond_joint(self, theta, uarg=None, zlag=1):
+        """Moment conditions (joint) for spectral GMM estimator.
+
+        Parameters
+        ----------
+        theta : (5, ) array
+            Vector of model parameters. [phi, price_ret]
+        uarg : (nu, ) array
+            Grid to evaluate a and b functions
+        zlag : int
+            Number of lags to use for the instrument
+
+        Returns
+        -------
+        moment : (nobs, nmoms) array
+            Matrix of momcond restrictions
+        dmoment : (nmoms, nparams) array
+            Gradient of momcond restrictions. Mean over observations
+
+        """
+        mom = self.moment_joint(theta, uarg=uarg, zlag=zlag)
+        dmom = self.dmoment_joint(theta, uarg=uarg, zlag=zlag)
+        return mom, dmom
 
     def estimate_gmm(self, param_start=None, model='vol', **kwargs):
         """Estimate model parameters using GMM.
@@ -829,22 +1028,37 @@ class ARG(object):
 
         Returns
         -------
+        param_final : ARGparams instance
+            Estimated model parameters
         mygmm.Results instance
             GMM estimation results
 
         """
         if model == 'vol':
             estimator = GMM(self.momcond_vol)
+            results = estimator.gmmest(param_start.get_theta_vol(), **kwargs)
         elif model == 'ret':
             estimator = GMM(self.momcond_ret)
+            results = estimator.gmmest(param_start.get_theta_ret(),
+                                       theta_vol=param_start.get_theta_vol(),
+                                       **kwargs)
+        elif model == 'joint':
+            estimator = GMM(self.momcond_joint)
+            results = estimator.gmmest(param_start.get_theta(), **kwargs)
+        else:
+            raise ValueError('Model type not supported')
 
-        results = estimator.gmmest(param_start, **kwargs)
         param_final = ARGparams()
 
         if model == 'vol':
             param_final.update(theta_vol=results.theta)
         elif model == 'ret':
-            param_final.update(theta_ret=results.theta)
+            param_final.update(theta_vol=param_start.get_theta_vol(),
+                               theta_ret=results.theta)
+        elif model == 'joint':
+            param_final.update(theta=results.theta)
+        else:
+            raise ValueError('Model type not supported')
 
         return param_final, results
 

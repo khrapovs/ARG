@@ -37,7 +37,7 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(param.get_theta_vol(), np.ndarray)
         np.testing.assert_array_equal(param.get_theta_vol(), theta_true)
 
-        scale, rho, delta = 1, 2, 3
+        scale, rho, delta = .01, .5, 3
         theta_true = [scale, rho, delta]
         param.update(theta_vol=theta_true)
 
@@ -61,7 +61,7 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(param.get_theta_ret(), np.ndarray)
         np.testing.assert_array_equal(param.get_theta_ret(), theta_true)
 
-        phi, price_vol, price_ret = 1, 2, 3
+        phi, price_vol, price_ret = .1, 2, 3
         theta_true = [phi, price_ret]
         param.update(theta_ret=theta_true)
 
@@ -71,8 +71,8 @@ class ARGTestCase(ut.TestCase):
     def test_param_class_joint(self):
         """Test parameter class for joint parameters."""
 
-        scale, rho, delta = 1, 2, 3
-        phi, price_vol, price_ret = -.5, -5, 5
+        scale, rho, delta = .01**2, .9, 1.1
+        phi, price_vol, price_ret = -.5, -1, 1
         param = ARGparams(scale=scale, rho=rho, delta=delta,
                           phi=phi, price_ret=price_ret)
 
@@ -81,40 +81,41 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(param.get_theta(), np.ndarray)
         np.testing.assert_array_equal(param.get_theta(), theta_true)
 
-        theta_true = np.arange(5)
+        theta_true = np.array(theta_true) / 10
         param.update(theta=theta_true)
 
         np.testing.assert_array_equal(param.get_theta(), theta_true)
 
-    def test_conversion_to_q(self):
-        """Test conversion to Q measure."""
-        scale, rho, delta = 1, 2, 3
-        phi, price_vol, price_ret = -.5, -5, 5
-        param = ARGparams(scale=scale, rho=rho, delta=delta,
-                          phi=phi, price_ret=price_ret, price_vol=price_vol)
-        argmodel = ARG(param=param)
-        param_q = argmodel.convert_to_q()
-
-        self.assertIsInstance(param_q, ARGparams)
-
-        factor = 1/(1 + scale * (price_vol + argmodel.alpha(price_ret)))
-        scale = scale * factor
-        beta = param.beta * factor
-        rho = scale * beta
-
-        self.assertEqual(param_q.scale, scale)
-        self.assertEqual(param_q.rho, rho)
-        self.assertEqual(param_q.delta, delta)
+#    def test_conversion_to_q(self):
+#        """Test conversion to Q measure."""
+#        scale, rho, delta = 1, 2, 3
+#        phi, price_vol, price_ret = -.5, -5, 5
+#        param = ARGparams(scale=scale, rho=rho, delta=delta,
+#                          phi=phi, price_ret=price_ret, price_vol=price_vol)
+#        argmodel = ARG()
+#        param_q = argmodel.convert_to_q(param)
+#
+#        self.assertIsInstance(param_q, ARGparams)
+#
+#        factor = 1/(1 + scale * (price_vol + argmodel.alpha(price_ret, param)))
+#        scale = scale * factor
+#        beta = param.beta * factor
+#        rho = scale * beta
+#
+#        self.assertEqual(param_q.scale, scale)
+#        self.assertEqual(param_q.rho, rho)
+#        self.assertEqual(param_q.delta, delta)
 
     def test_uncond_moments(self):
         """Test unconditional moments of the ARG model."""
 
-        scale, rho, delta = 1, 2, 3
-        argmodel = ARG(ARGparams())
+        scale, rho, delta = 1, .9, 3
+        param = ARGparams(scale=scale, rho=rho, delta=delta)
+        argmodel = ARG()
 
-        self.assertIsInstance(argmodel.umean(), float)
-        self.assertIsInstance(argmodel.uvar(), float)
-        self.assertIsInstance(argmodel.ustd(), float)
+        self.assertIsInstance(argmodel.umean(param), float)
+        self.assertIsInstance(argmodel.uvar(param), float)
+        self.assertIsInstance(argmodel.ustd(param), float)
 
         # TODO : test using symbolic library
         # that these moments coincide with derivatives of a, b, c
@@ -122,49 +123,54 @@ class ARGTestCase(ut.TestCase):
     def test_abc_functions(self):
         """Test functions a, b, c of ARG model."""
 
-        argmodel = ARG(ARGparams())
+        param = ARGparams()
+        argmodel = ARG()
         for i in [1, 10]:
             uarg = np.linspace(-50, 100, i)
 
-            self.assertIsInstance(argmodel.afun(uarg), np.ndarray)
-            self.assertIsInstance(argmodel.bfun(uarg), np.ndarray)
-            self.assertIsInstance(argmodel.cfun(uarg), np.ndarray)
+            self.assertIsInstance(argmodel.afun(uarg, param), np.ndarray)
+            self.assertIsInstance(argmodel.bfun(uarg, param), np.ndarray)
+            self.assertIsInstance(argmodel.cfun(uarg, param), np.ndarray)
 
-            self.assertEqual(uarg.shape, argmodel.afun(uarg).shape)
-            self.assertEqual(uarg.shape, argmodel.bfun(uarg).shape)
-            self.assertEqual(uarg.shape, argmodel.cfun(uarg).shape)
+            self.assertEqual(uarg.shape, argmodel.afun(uarg, param).shape)
+            self.assertEqual(uarg.shape, argmodel.bfun(uarg, param).shape)
+            self.assertEqual(uarg.shape, argmodel.cfun(uarg, param).shape)
 
     def test_ret_functions(self):
         """Test functions alpha, beta, gamma of ARG model."""
 
-        argmodel = ARG(ARGparams())
+        param = ARGparams()
+        argmodel = ARG()
         for i in [1, 10]:
             uarg = np.linspace(-50, 100, i)
 
-            self.assertIsInstance(argmodel.alpha(uarg), np.ndarray)
-            self.assertIsInstance(argmodel.beta(uarg), np.ndarray)
-            self.assertIsInstance(argmodel.gamma(uarg), np.ndarray)
+            self.assertIsInstance(argmodel.alpha(uarg, param), np.ndarray)
+            self.assertIsInstance(argmodel.beta(uarg, param), np.ndarray)
+            self.assertIsInstance(argmodel.gamma(uarg, param), np.ndarray)
 
-            self.assertEqual(uarg.shape, argmodel.alpha(uarg).shape)
-            self.assertEqual(uarg.shape, argmodel.beta(uarg).shape)
-            self.assertEqual(uarg.shape, argmodel.gamma(uarg).shape)
+            self.assertEqual(uarg.shape, argmodel.alpha(uarg, param).shape)
+            self.assertEqual(uarg.shape, argmodel.beta(uarg, param).shape)
+            self.assertEqual(uarg.shape, argmodel.gamma(uarg, param).shape)
 
     def test_abc_derivatives(self):
         """Test derivatives of functions a, b, c of ARG model."""
 
-        argmodel = ARG(ARGparams())
+        param = ARGparams()
+        argmodel = ARG()
         for i in [1, 10]:
             uarg = np.linspace(-50, 100, i)
 
-            self.assertIsInstance(argmodel.dafun(uarg), np.ndarray)
-            self.assertIsInstance(argmodel.dbfun(uarg), np.ndarray)
+            self.assertIsInstance(argmodel.dafun(uarg, param), np.ndarray)
+            self.assertIsInstance(argmodel.dbfun(uarg, param), np.ndarray)
 
-            self.assertEqual(argmodel.dafun(uarg).shape, (3, uarg.shape[0]))
-            self.assertEqual(argmodel.dbfun(uarg).shape, (3, uarg.shape[0]))
+            self.assertEqual(argmodel.dafun(uarg, param).shape,
+                             (3, uarg.shape[0]))
+            self.assertEqual(argmodel.dbfun(uarg, param).shape,
+                             (3, uarg.shape[0]))
 
     def test_load_data(self):
         """Test load data into the model object."""
-        argmodel = ARG(ARGparams())
+        argmodel = ARG()
 
         self.assertEqual(argmodel.vol, None)
         self.assertEqual(argmodel.ret, None)
@@ -187,15 +193,16 @@ class ARGTestCase(ut.TestCase):
     def test_simulations(self):
         """Test simulation of ARG model."""
 
-        argmodel = ARG(ARGparams())
+        param = ARGparams()
+        argmodel = ARG()
 
-        self.assertIsInstance(argmodel.vsim(), np.ndarray)
-        self.assertIsInstance(argmodel.vsim2(), np.ndarray)
+        self.assertIsInstance(argmodel.vsim(param=param), np.ndarray)
+        self.assertIsInstance(argmodel.vsim2(param=param), np.ndarray)
 
-        vol = argmodel.vsim2()
+        vol = argmodel.vsim2(param=param)
         argmodel.load_data(vol=vol)
 
-        self.assertIsInstance(argmodel.rsim(), np.ndarray)
+        self.assertIsInstance(argmodel.rsim(param=param), np.ndarray)
 
         shapes = []
         nsim, nobs = 1, 1
@@ -208,16 +215,19 @@ class ARGTestCase(ut.TestCase):
         for shape in shapes:
             nsim, nobs = shape
 
-            self.assertEqual(argmodel.vsim(nsim=nsim, nobs=nobs).shape, shape)
-            vol = argmodel.vsim2(nsim=nsim, nobs=nobs)
+            self.assertEqual(argmodel.vsim(nsim=nsim, nobs=nobs,
+                                           param=param).shape, shape)
+            vol = argmodel.vsim2(nsim=nsim, nobs=nobs, param=param)
             argmodel.load_data(vol=vol)
             self.assertEqual(vol.shape, shape)
-            self.assertEqual(argmodel.rsim().shape, shape)
+            self.assertEqual(argmodel.rsim(param=param).shape, shape)
 
-            self.assertEqual(argmodel.vsim_last(nsim=nsim, nobs=nobs).shape,
-                             (nsim, ))
-            self.assertGreater(argmodel.vsim(nsim=nsim, nobs=nobs).min(), 0)
-            self.assertGreater(argmodel.vsim2(nsim=nsim, nobs=nobs).min(), 0)
+            self.assertEqual(argmodel.vsim_last(nsim=nsim, nobs=nobs,
+                                                param=param).shape, (nsim, ))
+            self.assertGreater(argmodel.vsim(nsim=nsim, nobs=nobs,
+                                             param=param).min(), 0)
+            self.assertGreater(argmodel.vsim2(nsim=nsim, nobs=nobs,
+                                              param=param).min(), 0)
 
     def test_likelihoods(self):
         """Test likelihood functions."""
@@ -227,20 +237,23 @@ class ARGTestCase(ut.TestCase):
         theta = np.ones(5)
         vol = np.array([1, 2, 3])
         ret = np.array([4, 5, 6])
+        param = ARGparams()
+        param.update(theta_vol=theta_vol, theta_ret=theta_ret)
 
-        argmodel = ARG(param=ARGparams())
+        argmodel = ARG()
         argmodel.load_data(vol=vol, ret=ret)
 
         self.assertIsInstance(argmodel.likelihood_vol(theta_vol), float)
-        self.assertIsInstance(argmodel.likelihood_ret(theta_ret), float)
+        self.assertIsInstance(argmodel.likelihood_ret(theta_ret, theta_vol),
+                              float)
         self.assertIsInstance(argmodel.likelihood_joint(theta), float)
 
     def test_estimate_mle(self):
         """Test MLE estimation."""
         param_true = ARGparams()
-        argmodel = ARG(param=param_true)
+        argmodel = ARG()
         nsim, nobs = 1, 500
-        vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+        vol = argmodel.vsim(nsim=nsim, nobs=nobs, param=param_true).flatten()
         argmodel.load_data(vol=vol)
         fun = lambda: argmodel.estimate_mle(param_start=param_true,
                                             model='zzz')
@@ -266,7 +279,8 @@ class ARGTestCase(ut.TestCase):
         """Test moment condition method."""
         theta = np.array([1, 1, 1])
         uarg = np.array([-1, 0, 1])
-        argmodel = ARG(ARGparams())
+        param = ARGparams()
+        argmodel = ARG()
         self.assertRaises(ValueError, lambda: argmodel.momcond_vol(theta))
         fun = lambda: argmodel.momcond_vol(theta, uarg=uarg)
         self.assertRaises(ValueError, fun)
@@ -275,42 +289,64 @@ class ARGTestCase(ut.TestCase):
         """Test moment condition method."""
         theta = np.array([1, 1, 1])
         uarg = np.array([-1, 0, 1])
-        argmodel = ARG(ARGparams())
+        param = ARGparams()
+        argmodel = ARG()
 
         nsim, nobs = 1, 10
         instrlag = 2
-        vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+        vol = argmodel.vsim(nsim=nsim, nobs=nobs, param=param).flatten()
         argmodel.load_data(vol=vol)
 
         moment, dmoment = argmodel.momcond_vol(theta, uarg=uarg, zlag=instrlag)
 
-        np.testing.assert_array_equal(argmodel.param.get_theta_vol(), theta)
-
-        momshape = (vol.shape[0]-instrlag, 2*uarg.shape[0]*instrlag)
-        dmomshape = (2*uarg.shape[0]*instrlag, theta.shape[0])
+        momshape = (vol.shape[0]-instrlag, 2*uarg.shape[0]*(instrlag+1))
+        dmomshape = (2*uarg.shape[0]*(instrlag+1), theta.shape[0])
 
         self.assertEqual(moment.shape, momshape)
         self.assertEqual(dmoment.shape, dmomshape)
 
     def test_momcond_ret(self):
         """Test moment condition method."""
-        theta = np.array([1, 1])
         uarg = np.array([-1, 0, 1])
-        argmodel = ARG(ARGparams())
+        param = ARGparams()
+        theta_ret = param.get_theta_ret()
+        theta_vol = param.get_theta_vol()
+        argmodel = ARG()
 
         nsim, nobs = 1, 10
         instrlag = 2
-        vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+        vol = argmodel.vsim(nsim=nsim, nobs=nobs, param=param).flatten()
         argmodel.load_data(vol=vol)
-        ret = argmodel.rsim()
+        ret = argmodel.rsim(param=param)
         argmodel.load_data(ret=ret)
 
-        moment, dmoment = argmodel.momcond_ret(theta, uarg=uarg, zlag=instrlag)
+        moment, dmoment = argmodel.momcond_ret(theta_ret, theta_vol=theta_vol,
+                                               uarg=uarg, zlag=instrlag)
 
-        # np.testing.assert_array_equal(argmodel.param.get_theta_ret(), theta)
+        momshape = (vol.shape[0]-instrlag, 2*uarg.shape[0]*(instrlag+1))
+        dmomshape = (2*uarg.shape[0]*(instrlag+1), theta_ret.shape[0])
 
-        momshape = (vol.shape[0]-instrlag, 2*uarg.shape[0]*instrlag)
-        dmomshape = (2*uarg.shape[0]*instrlag, theta.shape[0])
+        self.assertEqual(moment.shape, momshape)
+        self.assertEqual(dmoment.shape, dmomshape)
+
+    def test_momcond_joint(self):
+        """Test moment condition method."""
+        uarg = np.array([-1, 0, 1])
+        param = ARGparams()
+        argmodel = ARG()
+
+        nsim, nobs = 1, 10
+        instrlag = 2
+        vol = argmodel.vsim(nsim=nsim, nobs=nobs, param=param).flatten()
+        argmodel.load_data(vol=vol)
+        ret = argmodel.rsim(param=param)
+        argmodel.load_data(ret=ret)
+
+        moment, dmoment = argmodel.momcond_joint(param.get_theta(), uarg=uarg,
+                                                 zlag=instrlag)
+
+        momshape = (vol.shape[0]-instrlag, 4*uarg.shape[0]*(instrlag+1))
+        dmomshape = (4*uarg.shape[0]*(instrlag+1), param.get_theta().shape[0])
 
         self.assertEqual(moment.shape, momshape)
         self.assertEqual(dmoment.shape, dmomshape)
@@ -318,14 +354,14 @@ class ARGTestCase(ut.TestCase):
     def test_gmmest(self):
         """Test GMM estimation."""
         param_true = ARGparams()
-        argmodel = ARG(param=param_true)
+        argmodel = ARG()
         nsim, nobs = 1, 500
-        vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+        vol = argmodel.vsim(nsim=nsim, nobs=nobs, param=param_true).flatten()
         argmodel.load_data(vol=vol)
         uarg = np.linspace(.1, 10, 3) * 1j
 
-        param_final, results = argmodel.estimate_gmm(
-            param_true.get_theta_vol(), uarg=uarg, zlag=2)
+        param_final, results = argmodel.estimate_gmm(param_start=param_true,
+                                                     uarg=uarg, zlag=2)
 
         self.assertIsInstance(results, Results)
         self.assertIsInstance(param_final.get_theta_vol(), np.ndarray)

@@ -28,8 +28,7 @@ class ARGparams(object):
     AssertionError
 
     """
-    def __init__(self, scale=.001, rho=.9, delta=1.1,
-                 tau1=.5, tau2=1, phi=-.5,
+    def __init__(self, scale=.001, rho=.9, delta=1.1, phi=-.5,
                  price_vol=-1., price_ret=1.):
         """Initialize the class instance.
 
@@ -58,6 +57,7 @@ class ARGparams(object):
 
         # Return parameters
         # Correlation between return and volatility (leverage)
+        assert abs(phi) < 1, "Leverage must be inside (-1, 1)!"
         self.phi = phi
         # Volatility risk price
         self.price_vol = price_vol
@@ -79,20 +79,28 @@ class ARGparams(object):
         if theta_vol is not None:
             assert len(theta_vol) == 3, \
                 "Wrong number of parameters in theta_vol!"
-            if theta_vol[0] <= 0:
-                raise ValueError("Scale must be greater than zero!")
-            [self.scale, self.rho, self.delta] = theta_vol
+            if np.array(theta_vol).min() <= 0 or theta_vol[1] >= 1:
+                raise ValueError("Inadmissible parameters!")
+            else:
+                [self.scale, self.rho, self.delta] = theta_vol
 
         if theta_ret is not None:
             assert len(theta_ret) == 2, \
                 "Wrong number of parameters in theta_ret!"
-            [self.phi, self.price_ret] = theta_ret
+            if abs(theta_ret[0]) >= 1:
+                raise ValueError("Inadmissible parameters!")
+            else:
+                [self.phi, self.price_ret] = theta_ret
 
         if theta is not None:
             assert len(theta) == 5, \
                 "Wrong number of parameters in theta!"
-            [self.scale, self.rho, self.delta, self.phi, self.price_ret] \
-                = theta
+            if abs(theta[3]) >= 1 or np.array(theta[:3]).min() <= 0 \
+                or theta[1] >= 1:
+                    raise ValueError("Inadmissible parameters!")
+            else:
+                [self.scale, self.rho, self.delta, self.phi, self.price_ret] \
+                    = theta
 
     def get_theta_vol(self):
         """Get volatility parameters in a vector.

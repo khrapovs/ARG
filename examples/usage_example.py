@@ -20,16 +20,16 @@ def play_with_arg():
     param = ARGparams()
     print(param)
 
-    argmodel = ARG(param=param)
+    argmodel = ARG()
     uarg = np.linspace(-50, 100, 100)
-    argmodel.plot_abc(uarg)
+    argmodel.plot_abc(uarg, param)
 
-    argmodel.plot_vsim()
+    argmodel.plot_vsim(param=param)
 
-    vol = argmodel.vsim_last(nsim=10)
+    vol = argmodel.vsim_last(nsim=10, param=param)
     print(vol.shape)
 
-    argmodel.plot_vlast_density(nsim=1000)
+    argmodel.plot_vlast_density(nsim=1000, param=param)
 
 
 def try_simulation():
@@ -44,10 +44,10 @@ def try_simulation():
     param = ARGparams(scale=scale, rho=rho, delta=delta,
                       phi=phi, price_ret=price_ret)
     nobs = 500
-    argmodel = ARG(param=param)
-    vol = argmodel.vsim(nsim=1, nobs=nobs)
+    argmodel = ARG()
+    vol = argmodel.vsim(nsim=1, nobs=nobs, param=param)
     argmodel.load_data(vol=vol)
-    ret = argmodel.rsim()
+    ret = argmodel.rsim(param=param)
 
     plt.figure(figsize=(8, 4))
     plt.subplot(2, 1, 1)
@@ -60,15 +60,15 @@ def try_simulation():
 def estimate_mle_vol():
     """Try MLE estimator with volatility."""
     param_true = ARGparams()
-    argmodel = ARG(param=param_true)
+    argmodel = ARG()
     nsim, nobs = 1, 500
-    vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+    vol = argmodel.vsim(nsim=nsim, nobs=nobs, param=param_true).flatten()
     argmodel.load_data(vol=vol)
     param_final, results = argmodel.estimate_mle(param_start=param_true,
                                                  model='vol')
 
-    print('True parameter:', param_true)
-    print('Final parameter: ', param_final)
+    print('True parameter:', param_true.get_theta_vol())
+    print('Final parameter: ', param_final.get_theta_vol())
     print(results)
 
     return param_final, results
@@ -85,11 +85,11 @@ def estimate_mle_ret():
 
     param_true = ARGparams(scale=scale, rho=rho, delta=delta,
                            phi=phi, price_ret=price_ret)
-    argmodel = ARG(param=param_true)
+    argmodel = ARG()
     nsim, nobs = 1, 500
-    vol = argmodel.vsim(nsim=nsim, nobs=nobs)
+    vol = argmodel.vsim(nsim=nsim, nobs=nobs, param=param_true)
     argmodel.load_data(vol=vol)
-    ret = argmodel.rsim().flatten()
+    ret = argmodel.rsim(param=param_true).flatten()
     vol = vol.flatten()
     argmodel.load_data(vol=vol, ret=ret)
 
@@ -113,43 +113,61 @@ def estimate_mle_joint():
     delta = 1.1
     dailymean = .2**2
     scale = dailymean * (1 - rho) / delta
-    price_vol, price_ret = -16, .95
+    price_ret = .95
     phi = -.5
 
     param_true = ARGparams(scale=scale, rho=rho, delta=delta,
                            phi=phi, price_ret=price_ret)
-    argmodel = ARG(param=param_true)
+    argmodel = ARG()
     nsim, nobs = 1, 500
-    vol = argmodel.vsim(nsim=nsim, nobs=nobs)
+    vol = argmodel.vsim(nsim=nsim, nobs=nobs, param=param_true)
     argmodel.load_data(vol=vol)
-    ret = argmodel.rsim().flatten()
+    ret = argmodel.rsim(param=param_true).flatten()
     vol = vol.flatten()
     argmodel.load_data(vol=vol, ret=ret)
 
-    pfinal, results = argmodel.estimate_mle(param_start=param_true,
+    param_final, results = argmodel.estimate_mle(param_start=param_true,
                                             model='joint')
 
     print(results)
-    print(pfinal.get_theta())
+    print('True parameter:', param_true.get_theta())
+    print('Final parameter: ', param_final.get_theta())
+    print('Tstat: ', results.tstat)
 
-    return pfinal, results
+    fig, axes = plt.subplots(nrows=2, ncols=1)
+    axes[0].plot(vol, label='Vol')
+    axes[0].plot(argmodel.ret_cvar(param_final), label='Predicted')
+    axes[0].legend()
+    axes[1].plot(ret, label='Ret')
+    axes[1].plot(argmodel.ret_cmean(param_final), label='Predicted')
+    axes[1].legend()
+    plt.show()
+
+    return param_final, results
 
 
 def estimate_gmm_vol():
     """Try GMM estimator."""
     param_true = ARGparams()
-    argmodel = ARG(param=param_true)
+    argmodel = ARG()
     nsim, nobs = 1, 500
-    vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+    vol = argmodel.vsim(nsim=nsim, nobs=nobs, param=param_true).flatten()
     argmodel.load_data(vol=vol)
     uarg = np.linspace(.1, 10, 3) * 1j
     param_final, results = argmodel.estimate_gmm(uarg=uarg, zlag=2,
-        param_start=param_true.get_theta_vol(), model='vol')
+        param_start=param_true, model='vol')
 
     print('True parameter:', param_true)
     print('Final parameter: ', param_final)
     print('Std: ', results.tstat)
     results.print_results()
+
+    plt.plot(vol, label='Data')
+    plt.plot(argmodel.vol_cmean(param_final), label='Predicted')
+    plt.legend()
+    plt.show()
+
+    return param_final, results
 
 
 def estimate_gmm_ret():
@@ -159,29 +177,90 @@ def estimate_gmm_ret():
     delta = 1.1
     dailymean = .01**2
     scale = dailymean * (1 - rho) / delta
-    price_vol, price_ret = -1, .95
+    price_ret = .95
     phi = -.5
 
     param_true = ARGparams(scale=scale, rho=rho, delta=delta,
                            phi=phi, price_ret=price_ret)
-    argmodel = ARG(param=param_true)
+    argmodel = ARG()
     nsim, nobs = 1, 500
-    vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+    vol = argmodel.vsim(nsim=nsim, nobs=nobs, param=param_true).flatten()
     argmodel.load_data(vol=vol)
-    ret = argmodel.rsim()
+    ret = argmodel.rsim(param=param_true)
     argmodel.load_data(ret=ret)
 
     uarg = np.linspace(.1, 10, 3) * 1j
     param_final, results = argmodel.estimate_gmm(uarg=uarg, zlag=2,
-        param_start=param_true.get_theta_ret(), model='ret')
+        param_start=param_true, model='ret')
 
     print('True parameter:', param_true.get_theta_ret())
     print('Final parameter: ', param_final.get_theta_ret())
     print('Std: ', results.tstat)
     results.print_results()
 
+    fig, axes = plt.subplots(nrows=2, ncols=1)
+    axes[0].plot(vol, label='Vol')
+    axes[0].plot(argmodel.ret_cvar(param_final), label='Predicted')
+    axes[0].legend()
+    axes[1].plot(ret, label='Ret')
+    axes[1].plot(argmodel.ret_cmean(param_final), label='Predicted')
+    axes[1].legend()
+    plt.show()
+
+    return param_final, results
+
+
+def estimate_gmm_joint():
+    """Try GMM estimator."""
+
+    rho = .9
+    delta = 1.1
+    dailymean = .01**2
+    scale = dailymean * (1 - rho) / delta
+    price_ret = .95
+    phi = -.5
+
+    param_true = ARGparams(scale=scale, rho=rho, delta=delta,
+                           phi=phi, price_ret=price_ret)
+    argmodel = ARG()
+    nsim, nobs = 1, 500
+    vol = argmodel.vsim(nsim=nsim, nobs=nobs, param=param_true).flatten()
+    argmodel.load_data(vol=vol)
+    ret = argmodel.rsim(param=param_true)
+    argmodel.load_data(ret=ret)
+
+    rho = .5
+    delta = 1.5
+    scale = dailymean * (1 - rho) / delta
+    phi = -.1
+
+    param_start = ARGparams(scale=scale, rho=rho, delta=delta,
+                            phi=phi, price_ret=price_ret)
+
+    uarg = np.linspace(.1, 10, 3) * 1j
+    param_final, results = argmodel.estimate_gmm(uarg=uarg, zlag=2,
+        param_start=param_start, model='joint')
+
+    print('True parameter:', param_true.get_theta())
+    print('Final parameter: ', param_final.get_theta())
+    print('Std: ', results.tstat)
+    results.print_results()
+
+    fig, axes = plt.subplots(nrows=2, ncols=1)
+    axes[0].plot(vol, label='Vol')
+    axes[0].plot(argmodel.vol_cmean(param_final), label='Predicted')
+    axes[0].legend()
+    axes[1].plot(ret, label='Ret')
+    axes[1].plot(argmodel.ret_cmean(param_final), label='Predicted')
+    axes[1].legend()
+    plt.show()
+
+    return param_final, results
+
 
 if __name__ == '__main__':
+
+    np.set_printoptions(precision=4, suppress=True)
 
 #    play_with_arg()
 
@@ -193,7 +272,9 @@ if __name__ == '__main__':
 
 #    pfinal, results = estimate_mle_joint()
 
-#    estimate_gmm_vol()
+#    param_final, results = estimate_gmm_vol()
 
-    estimate_gmm_ret()
+#    param_final, results = estimate_gmm_ret()
+
+    param_final, results = estimate_gmm_joint()
 
