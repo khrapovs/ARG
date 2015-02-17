@@ -176,7 +176,7 @@ class ARGTestCase(ut.TestCase):
 
         argmodel.load_data(ret=1)
 
-        self.assertEqual(argmodel.vol, None)
+        self.assertEqual(argmodel.vol, 0)
         self.assertEqual(argmodel.ret, 1)
 
         argmodel.load_data(ret=2, vol=3)
@@ -267,11 +267,11 @@ class ARGTestCase(ut.TestCase):
         theta = np.array([1, 1, 1])
         uarg = np.array([-1, 0, 1])
         argmodel = ARG(ARGparams())
-        self.assertRaises(ValueError, lambda: argmodel.momcond(theta))
-        fun = lambda: argmodel.momcond(theta, uarg=uarg)
+        self.assertRaises(ValueError, lambda: argmodel.momcond_vol(theta))
+        fun = lambda: argmodel.momcond_vol(theta, uarg=uarg)
         self.assertRaises(ValueError, fun)
 
-    def test_momcond(self):
+    def test_momcond_vol(self):
         """Test moment condition method."""
         theta = np.array([1, 1, 1])
         uarg = np.array([-1, 0, 1])
@@ -282,10 +282,32 @@ class ARGTestCase(ut.TestCase):
         vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
         argmodel.load_data(vol=vol)
 
-        moment, dmoment = argmodel.momcond(theta, uarg=uarg,
-                                           zlag=instrlag)
+        moment, dmoment = argmodel.momcond_vol(theta, uarg=uarg, zlag=instrlag)
 
         np.testing.assert_array_equal(argmodel.param.get_theta_vol(), theta)
+
+        momshape = (vol.shape[0]-instrlag, 2*uarg.shape[0]*instrlag)
+        dmomshape = (2*uarg.shape[0]*instrlag, theta.shape[0])
+
+        self.assertEqual(moment.shape, momshape)
+        self.assertEqual(dmoment.shape, dmomshape)
+
+    def test_momcond_ret(self):
+        """Test moment condition method."""
+        theta = np.array([1, 1])
+        uarg = np.array([-1, 0, 1])
+        argmodel = ARG(ARGparams())
+
+        nsim, nobs = 1, 10
+        instrlag = 2
+        vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+        argmodel.load_data(vol=vol)
+        ret = argmodel.rsim()
+        argmodel.load_data(ret=ret)
+
+        moment, dmoment = argmodel.momcond_ret(theta, uarg=uarg, zlag=instrlag)
+
+        # np.testing.assert_array_equal(argmodel.param.get_theta_ret(), theta)
 
         momshape = (vol.shape[0]-instrlag, 2*uarg.shape[0]*instrlag)
         dmomshape = (2*uarg.shape[0]*instrlag, theta.shape[0])

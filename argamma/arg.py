@@ -142,8 +142,10 @@ class ARG(object):
             Return time series
 
         """
-        self.vol = vol
-        self.ret = ret
+        if vol is not None:
+            self.vol = vol
+        if ret is not None:
+            self.ret = ret
 
     def afun(self, uarg):
         r"""Function a().
@@ -508,10 +510,10 @@ class ARG(object):
 
         """
         # simulate returns
-        ret = self.ret_cmean() + self.ret_cvar()**.5 \
+        ret = np.zeros_like(self.vol)
+        ret[1:] = self.ret_cmean() + self.ret_cvar()**.5 \
             * np.random.normal(size=self.vol[1:].shape)
-        return np.vstack((np.zeros((1, self.vol.shape[1])), ret))
-
+        return ret
 
     def vsim_last(self, **args):
         """The last observation in the series of simulations.
@@ -671,8 +673,8 @@ class ARG(object):
         except ValueError:
             return 1e10
 
-    def momcond(self, theta, uarg=None, zlag=1):
-        """Moment conditions for spectral GMM estimator.
+    def momcond_vol(self, theta, uarg=None, zlag=1):
+        """Moment conditions (volatility) for spectral GMM estimator.
 
         Parameters
         ----------
@@ -706,19 +708,14 @@ class ARG(object):
         nobs = vol.shape[0]
         # Number of moments
         nmoms = 2 * uarg.shape[0] * zlag
-        # Number of instruments
+        # Number of parameters
         nparams = theta.shape[0]
 
-        if theta[0] <= 0:
+        if theta.min() <= 0:
             return np.ones((nobs, nmoms))*1e10, np.ones((nmoms, nparams))*1e10
 
         # Change class attribute with the current theta
         self.param.update(theta_vol=theta)
-
-        if theta.min() <= 0:
-            moment = np.ones((nobs, nmoms)) * 1e10
-            dmoment = np.ones((nmoms, nparams)) * 1e10
-            return moment, dmoment
 
         # Must be (nobs, nu) array
         exparg = - prevvol * self.afun(uarg)
@@ -748,13 +745,83 @@ class ARG(object):
 
         return moment, dmoment
 
-    def estimate_gmm(self, param_start=None, **kwargs):
+    def moment_ret(self, theta, uarg=None, zlag=1):
+        """Moment conditions (returns) for spectral GMM estimator.
+
+        Parameters
+        ----------
+        theta : (2, ) array
+            Vector of model parameters. [phi, price_ret]
+        uarg : (nu, ) array
+            Grid to evaluate a and b functions
+        zlag : int
+            Number of lags to use for the instrument
+
+        Returns
+        -------
+        moment : (nobs, nmoms) array
+            Matrix of momcond restrictions
+        dmoment : (nmoms, nparams) array
+            Gradient of momcond restrictions. Mean over observations
+
+        Raises
+        ------
+        ValueError
+
+        """
+
+        if uarg is None:
+            raise ValueError("uarg is missing!")
+
+        vollag, vol = lagmat(self.vol, maxlag=zlag,
+                             original='sep', trim='both')
+        prevvol = vollag[:, 0][:, np.newaxis]
+        # Number of observations after truncation
+        nobs = vol.shape[0]
+        # Number of moments
+        nmoms = 2 * uarg.shape[0] * zlag
+        # Change class attribute with the current theta
+        self.param.update(theta_ret=theta)
+        # Must be (nobs, nu) array
+        try:
+            exparg = -vol * self.alpha(uarg) \
+                - prevvol * self.beta(uarg) \
+                - np.ones((nobs, 1)) * self.gamma(uarg)
+        except ValueError:
+            return np.ones((nobs, nmoms))*1e10
+        # Must be (nobs, nu) array
+        error = np.exp(-self.ret[zlag:, np.newaxis] * uarg) - np.exp(exparg)
+        # Instruments, (nobs, ninstr) array
+        instr = np.exp(-1j * vollag)
+        # Must be (nobs, nmoms) array
+        moment = error[:, np.newaxis, :] * instr[:, :, np.newaxis]
+        moment = moment.reshape((nobs, nmoms/2))
+        # (nobs, 2 * ninstr)
+        moment = np.hstack([np.real(moment), np.imag(moment)])
+
+        return moment
+
+    def momcond_ret(self, theta, uarg=None, zlag=1):
+        return self.moment_ret(theta, uarg=uarg, zlag=zlag), \
+            self.dmoment_ret(theta, uarg=uarg, zlag=zlag)
+
+    def dmoment_ret(self, theta, uarg=None, zlag=1):
+        mom = lambda theta: self.moment_ret(theta, uarg=uarg,
+                                            zlag=zlag).mean(0)
+        return nd.Jacobian(mom)(theta)
+
+    def estimate_gmm(self, param_start=None, model='vol', **kwargs):
         """Estimate model parameters using GMM.
 
         Parameters
         ----------
         param_start : ARGparams instance
             Starting value for optimization
+        model : str
+            Type of the model to estimate. Must be in:
+                - 'vol'
+                - 'ret'
+                - 'joint'
         uarg : array
             Grid to evaluate a and b functions
         zlag : int, optional
@@ -766,10 +833,19 @@ class ARG(object):
             GMM estimation results
 
         """
-        estimator = GMM(self.momcond)
+        if model == 'vol':
+            estimator = GMM(self.momcond_vol)
+        elif model == 'ret':
+            estimator = GMM(self.momcond_ret)
+
         results = estimator.gmmest(param_start, **kwargs)
         param_final = ARGparams()
-        param_final.update(theta_vol=results.theta)
+
+        if model == 'vol':
+            param_final.update(theta_vol=results.theta)
+        elif model == 'ret':
+            param_final.update(theta_ret=results.theta)
+
         return param_final, results
 
 

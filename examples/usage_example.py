@@ -135,7 +135,7 @@ def estimate_mle_joint():
     return pfinal, results
 
 
-def estimate_gmm():
+def estimate_gmm_vol():
     """Try GMM estimator."""
     param_true = ARGparams()
     argmodel = ARG(param=param_true)
@@ -144,7 +144,7 @@ def estimate_gmm():
     argmodel.load_data(vol=vol)
     uarg = np.linspace(.1, 10, 3) * 1j
     param_final, results = argmodel.estimate_gmm(uarg=uarg, zlag=2,
-        param_start=param_true.get_theta_vol())
+        param_start=param_true.get_theta_vol(), model='vol')
 
     print('True parameter:', param_true)
     print('Final parameter: ', param_final)
@@ -152,16 +152,48 @@ def estimate_gmm():
     results.print_results()
 
 
+def estimate_gmm_ret():
+    """Try GMM estimator."""
+
+    rho = .9
+    delta = 1.1
+    dailymean = .01**2
+    scale = dailymean * (1 - rho) / delta
+    price_vol, price_ret = -1, .95
+    phi = -.5
+
+    param_true = ARGparams(scale=scale, rho=rho, delta=delta,
+                           phi=phi, price_ret=price_ret)
+    argmodel = ARG(param=param_true)
+    nsim, nobs = 1, 500
+    vol = argmodel.vsim(nsim=nsim, nobs=nobs).flatten()
+    argmodel.load_data(vol=vol)
+    ret = argmodel.rsim()
+    argmodel.load_data(ret=ret)
+
+    uarg = np.linspace(.1, 10, 3) * 1j
+    param_final, results = argmodel.estimate_gmm(uarg=uarg, zlag=2,
+        param_start=param_true.get_theta_ret(), model='ret')
+
+    print('True parameter:', param_true.get_theta_ret())
+    print('Final parameter: ', param_final.get_theta_ret())
+    print('Std: ', results.tstat)
+    results.print_results()
+
+
 if __name__ == '__main__':
 
-    #play_with_arg()
+#    play_with_arg()
+
 #    try_simulation()
 
 #    param_final, results = estimate_mle_vol()
 
 #    pfinal_vol, pfinal_ret, results_vol, results_ret = estimate_mle_ret()
 
-    pfinal, results = estimate_mle_joint()
+#    pfinal, results = estimate_mle_joint()
 
-#    estimate_gmm()
+#    estimate_gmm_vol()
+
+    estimate_gmm_ret()
 
