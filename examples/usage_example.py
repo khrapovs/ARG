@@ -153,9 +153,13 @@ def estimate_gmm_vol():
     nsim, nobs = 1, 500
     vol = argmodel.vsim(nsim=nsim, nobs=nobs, param=param_true).flatten()
     argmodel.load_data(vol=vol)
-    uarg = np.linspace(.1, 10, 3) * 1j
+
+    param_start = ARGparams()
+    param_start.update(theta_vol=param_true.get_theta_vol()*.9)
+
+    uarg = np.linspace(1, 1000, 3) * 1j
     param_final, results = argmodel.estimate_gmm(uarg=uarg, zlag=2,
-        param_start=param_true, model='vol')
+        param_start=param_start, model='vol')
 
     print('True parameter:', param_true)
     print('Final parameter: ', param_final)
@@ -186,10 +190,10 @@ def estimate_gmm_ret():
     nsim, nobs = 1, 500
     vol = argmodel.vsim(nsim=nsim, nobs=nobs, param=param_true).flatten()
     argmodel.load_data(vol=vol)
-    ret = argmodel.rsim(param=param_true)
+    ret = argmodel.rsim(param=param_true).flatten()
     argmodel.load_data(ret=ret)
 
-    uarg = np.linspace(.1, 10, 3) * 1j
+    uarg = np.linspace(.1, 10, 3) * 1
     param_final, results = argmodel.estimate_gmm(uarg=uarg, zlag=2,
         param_start=param_true, model='ret')
 
@@ -237,7 +241,7 @@ def estimate_gmm_joint():
     param_start = ARGparams(scale=scale, rho=rho, delta=delta,
                             phi=phi, price_ret=price_ret)
 
-    uarg = np.linspace(.1, 10, 3) * 1j
+    uarg = np.linspace(.1, 10, 3) * 1j/10
     param_final, results = argmodel.estimate_gmm(uarg=uarg, zlag=2,
         param_start=param_start, model='joint')
 
@@ -258,6 +262,35 @@ def estimate_gmm_joint():
     return param_final, results
 
 
+def plot_cf():
+    """Plot characteristic functions.
+
+    """
+    rho = .9
+    delta = 1.1
+    dailymean = .01**2
+    scale = dailymean * (1 - rho) / delta
+    price_ret = .95
+    phi = -.5
+
+    param_true = ARGparams(scale=scale, rho=rho, delta=delta,
+                           phi=phi, price_ret=price_ret)
+    argmodel = ARG()
+    nsim, nobs = 1, 500
+    vol = argmodel.vsim(nsim=nsim, nobs=nobs, param=param_true).flatten()
+    argmodel.load_data(vol=vol)
+    ret = argmodel.rsim(param=param_true)
+    argmodel.load_data(ret=ret)
+
+    uarg = np.linspace(1, 10000, 2) * 1j
+
+    fix, axes = plt.subplots(nrows=3, ncols=1)
+    axes[0].plot(vol)
+    axes[1].plot(np.exp(-uarg * vol[:, np.newaxis]).real)
+    axes[2].plot(np.exp(-uarg * vol[:, np.newaxis]).imag)
+    plt.show()
+
+
 if __name__ == '__main__':
 
     np.set_printoptions(precision=4, suppress=True)
@@ -272,9 +305,11 @@ if __name__ == '__main__':
 
 #    pfinal, results = estimate_mle_joint()
 
-#    param_final, results = estimate_gmm_vol()
+    param_final, results = estimate_gmm_vol()
 
 #    param_final, results = estimate_gmm_ret()
 
-    param_final, results = estimate_gmm_joint()
+#    param_final, results = estimate_gmm_joint()
+
+#    plot_cf()
 

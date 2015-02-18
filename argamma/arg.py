@@ -29,7 +29,7 @@ import sympy as sp
 import matplotlib.pylab as plt
 import seaborn as sns
 import scipy.stats as scs
-from scipy.optimize import minimize
+from scipy.optimize import minimize, brute
 import numdifftools as nd
 
 from statsmodels.tsa.tsatools import lagmat
@@ -317,6 +317,21 @@ class ARG(object):
         """
         return param.phi / (param.scale * (1 + param.rho))**.5
 
+    def psi(self, param):
+        """Function psi.
+
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        float
+
+        """
+        return (param.price_ret-.5) * (1-param.phi**2) + self.center(param)
+
     def alpha(self, uarg, param):
         """Function alpha().
 
@@ -333,8 +348,7 @@ class ARG(object):
             Same dimension as uarg
 
         """
-        return ((param.price_ret-.5) * (1-param.phi**2) \
-            + self.center(param)) * uarg - .5 * uarg**2 * (1 - param.phi**2)
+        return self.psi(param) * uarg - .5 * uarg**2 * (1 - param.phi**2)
 
     def beta(self, uarg, param):
         """Function beta().
@@ -371,6 +385,45 @@ class ARG(object):
 
         """
         return uarg * self.bfun(- self.center(param), param)
+
+    def char_fun_vol(self, uarg, param):
+        """Conditional Characteristic function (volatility).
+
+        Parameters
+        ----------
+        uarg : array
+            Grid
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        (nobs-1, nu) array
+            Characteristic function for each observation and each grid point
+
+        """
+        return np.exp(- self.vol[:-1, np.newaxis] * self.afun(uarg, param) \
+            - np.ones((self.vol[1:].shape[0], 1)) * self.bfun(uarg, param))
+
+    def char_fun_ret(self, uarg, param):
+        """Conditional Characteristic function (return).
+
+        Parameters
+        ----------
+        uarg : array
+            Grid
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        (nobs-1, nu) array
+            Characteristic function for each observation and each grid point
+
+        """
+        return np.exp(-self.vol[1:, np.newaxis] * self.alpha(uarg, param) \
+            - self.vol[:-1, np.newaxis] * self.beta(uarg, param) \
+            - np.ones((self.vol[1:].shape[0], 1)) * self.gamma(uarg, param))
 
     def umean(self, param):
         r"""Unconditional mean of the volatility process.
@@ -528,6 +581,40 @@ class ARG(object):
         """
         return param.rho * self.vol[1:] + param.delta * param.scale
 
+    def vol_cvar(self, param):
+        """Conditional variance of volatility.
+
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        (nobs, nsim) array
+            Conditional mean
+
+        """
+        return (2 * param.rho * self.vol[1:] + param.delta * param.scale) \
+            * param.scale
+
+    def vol_kfun(self, param):
+        """Conditional variance of volatility.
+
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        (nobs, nsim) array
+            Conditional mean
+
+        """
+        return self.umean(param) / ((2 * param.rho * self.umean(param)
+            + param.delta * param.scale) * param.scale)
+
     def ret_cmean(self, param):
         """Conditional mean of return.
 
@@ -567,6 +654,56 @@ class ARG(object):
         B2 = float(-self.beta(u, param).diff(u, 2).subs(u, 0))
         C2 = float(-self.gamma(u, param).diff(u, 2).subs(u, 0))
         return A2 * self.vol[1:] + B2 * self.vol[:-1] + C2
+
+    def overdispersion(self, param):
+        """Conditional overdispersion.
+
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        (nobs, nsim) array
+            Conditional overdispersion
+
+        """
+        return self.vol_cmean(param) / self.vol_cvar(param)
+
+    def corr_series(self, param):
+        """Conditional correlation time series.
+
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        (nobs, nsim) array
+            Conditional correlation
+
+        """
+        return self.psi(param) * (self.psi(param)**2
+            + (1-param.phi**2) * self.overdispersion(param)) ** (-.5)
+
+    def approx_ratio(self, param):
+        """Approximation ratio.
+
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        (nobs, nsim) array
+            Approximation ratio
+
+        """
+        return 1 + param.phi**2 * (self.vol_kfun(param)
+            / self.overdispersion(param) - 1)
 
     def rsim(self, param=None):
         """Simulate returns given ARG(1) process for volatility.
@@ -666,6 +803,7 @@ class ARG(object):
 
         results = minimize(likelihood, theta_start, method='L-BFGS-B',
                            options=options)
+#        x0 = brute(likelihood, list(zip(theta_start*.9, theta_start*1.1)))
 
         hess_mat = nd.Hessian(likelihood)(results.x)
         results.std_theta = np.diag(np.linalg.inv(hess_mat) \
@@ -800,10 +938,7 @@ class ARG(object):
             return np.ones((nobs, nmoms))*1e10, np.ones((nmoms, nparams))*1e10
 
         # Must be (nobs, nu) array
-        exparg = - prevvol * self.afun(uarg, param)
-        exparg -= np.ones((nobs, 1)) * self.bfun(uarg, param)
-        # Must be (nobs, nu) array
-        error = np.exp(-vol * uarg) - np.exp(exparg)
+        error = np.exp(-vol * uarg) - self.char_fun_vol(uarg, param)[zlag-1:]
         # Instruments, (nobs, ninstr) array
         instr = np.hstack([np.exp(-1j * vollag), np.ones((nobs, 1))])
         # Must be (nobs, nmoms) array
@@ -815,9 +950,9 @@ class ARG(object):
         # Initialize derivative matrix
         dmoment = np.empty((nmoms, nparams))
         for i in range(nparams):
-            dexparg = - prevvol * self.dafun(uarg, param)[i]
-            dexparg -= np.ones((nobs, 1)) * self.dbfun(uarg, param)[i]
-            derror = - np.exp(exparg) * dexparg
+            dexparg = - prevvol * self.dafun(uarg, param)[i] \
+                - np.ones((nobs, 1)) * self.dbfun(uarg, param)[i]
+            derror = - self.char_fun_vol(uarg, param)[zlag-1:] * dexparg
 
             derrorinstr = derror[:, np.newaxis, :] * instr[:, :, np.newaxis]
             derrorinstr = derrorinstr.reshape((nobs, nmoms/2))
@@ -857,7 +992,6 @@ class ARG(object):
 
         vollag, vol = lagmat(self.vol, maxlag=zlag,
                              original='sep', trim='both')
-        prevvol = vollag[:, 0][:, np.newaxis]
         # Number of observations after truncation
         nobs = vol.shape[0]
         # Number of moments
@@ -870,13 +1004,11 @@ class ARG(object):
             return np.ones((nobs, nmoms))*1e10
         # Must be (nobs, nu) array
         try:
-            exparg = -vol * self.alpha(uarg, param) \
-                - prevvol * self.beta(uarg, param) \
-                - np.ones((nobs, 1)) * self.gamma(uarg, param)
+            cfun = self.char_fun_ret(uarg, param)[zlag-1:]
         except ValueError:
             return np.ones((nobs, nmoms))*1e10
         # Must be (nobs, nu) array
-        error = np.exp(-self.ret[zlag:, np.newaxis] * uarg) - np.exp(exparg)
+        error = np.exp(-self.ret[zlag:, np.newaxis] * uarg) - cfun
         # Instruments, (nobs, ninstr) array
         instr = np.hstack([np.exp(-1j * vollag), np.ones((nobs, 1))])
         # Must be (nobs, nmoms) array
