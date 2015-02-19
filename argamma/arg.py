@@ -29,7 +29,7 @@ import sympy as sp
 import matplotlib.pylab as plt
 import seaborn as sns
 import scipy.stats as scs
-from scipy.optimize import minimize, brute
+from scipy.optimize import minimize
 import numdifftools as nd
 
 from statsmodels.tsa.tsatools import lagmat
@@ -97,12 +97,24 @@ class ARG(object):
 
     """
 
-    def __init__(self, vol=None, ret=None):
+    def __init__(self, vol=None, ret=None, param=None, maturity=None):
         """Initialize class instance.
+
+        vol : array, optional
+            Volatility series
+        ret : array, optional
+            Asset return series
+        param : ARGparams instance, optional
+            Parameters of the model
+        maturity : float, optional
+            Maturity of the option or simply time horizon.
+            Fraction of a year, i.e. 30/365
 
         """
         self.vol = vol
         self.ret = ret
+        self.param = param
+        self.maturity = maturity
 
     def convert_to_q(self, param):
         """Convert physical (P) parameters to risk-neutral (Q) parameters.
@@ -1390,6 +1402,64 @@ class ARG(object):
             raise ValueError('Model type not supported')
 
         return param_final, results
+
+    def cos_restriction(self, riskfree=None):
+        """Restrictions used in COS method of option pricing.
+
+        Parameters
+        ----------
+        riskfree : float
+            Risk-free rate of returns, annualized
+        maturity : float
+            Maturity, fraction of the year, i.e. 30/365
+
+        Returns
+        -------
+        L : float
+        c1 : float
+        c2 : float
+        a : float
+        b : float
+
+        Notes
+        -----
+        This method is used by COS method of option pricing
+
+        """
+        L = 100.
+        c1 = riskfree * self.maturity
+        c2 = self.vol.mean() * self.maturity * 365
+
+        a = c1 - L * c2**.5
+        b = c1 + L * c2**.5
+
+        return L, c1, c2, a, b
+
+    def charfun(self, varg):
+        """Risk-neutral conditional characteristic function.
+
+        Parameters
+        ----------
+        varg : array
+            Grid for evaluation of CF
+
+        Returns
+        -------
+        array
+            Same dimension as varg
+
+        Notes
+        -----
+        This method is used by COS method of option pricing
+
+        """
+        if self.maturity is None:
+            raise ValueError('Maturity is not set!')
+        if self.param is None:
+            raise ValueError('Parameters are not set!')
+
+        periods = int(self.maturity * 365)
+        return self.char_fun_ret_q(varg, periods, self.param)
 
 
 if __name__ == '__main__':

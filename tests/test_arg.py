@@ -206,6 +206,33 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(cfun, np.ndarray)
         self.assertEqual(cfun.shape, (vol.shape[0]-1, 1))
 
+    def test_charfun(self):
+        """Test risk-neutral return charcteristic function."""
+        param = ARGparams()
+        vol = np.arange(5)
+        maturity = 30/365
+        argmodel = ARG(vol=vol, param=param, maturity=maturity)
+        varg = np.arange(5)
+
+        cfun = argmodel.charfun(varg)
+
+        self.assertIsInstance(cfun, np.ndarray)
+        self.assertEqual(cfun.shape, (vol.shape[0]-1, varg.shape[0]))
+
+    def test_cos_restriction(self):
+        """Test cos_restriction method."""
+        param = ARGparams()
+        vol = np.arange(5)
+        maturity = 30/365
+        argmodel = ARG(vol=vol, param=param, maturity=maturity)
+        L, c1, c2, a, b = argmodel.cos_restriction(riskfree=0.)
+
+        self.assertIsInstance(L, float)
+        self.assertIsInstance(c1, float)
+        self.assertIsInstance(c2, float)
+        self.assertIsInstance(a, float)
+        self.assertIsInstance(b, float)
+
     def test_abc_derivatives(self):
         """Test derivatives of functions a, b, c of ARG model."""
 
