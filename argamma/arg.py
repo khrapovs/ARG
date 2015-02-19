@@ -36,7 +36,7 @@ from statsmodels.tsa.tsatools import lagmat
 
 from .argparams import ARGparams
 from argamma.mygmm import GMM
-from fangoosterlee import cosmethod
+from argamma.fangoosterlee import cosmethod
 
 
 __author__ = "Stanislav Khrapov"
