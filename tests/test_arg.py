@@ -7,7 +7,7 @@ from __future__ import print_function, division
 
 import unittest as ut
 import numpy as np
-import scipy.optimize as so
+import scipy.optimize as sco
 
 from argamma import ARG, ARGparams
 from mygmm import Results
@@ -360,7 +360,7 @@ class ARGTestCase(ut.TestCase):
         ratio = param_true.get_theta_vol() / param_final.get_theta_vol()
 
         self.assertIsInstance(param_final, ARGparams)
-        self.assertIsInstance(results, so.optimize.OptimizeResult)
+        self.assertIsInstance(results, sco.optimize.OptimizeResult)
         np.testing.assert_allclose(ratio, np.ones_like(ratio), rtol=1e1)
 
         self.assertIsInstance(results.std_theta, np.ndarray)
