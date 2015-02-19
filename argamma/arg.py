@@ -35,7 +35,7 @@ import numdifftools as nd
 from statsmodels.tsa.tsatools import lagmat
 
 from .argparams import ARGparams
-from mygmm import GMM
+from argamma.mygmm import GMM
 from fangoosterlee import cosmethod
 
 
@@ -78,6 +78,12 @@ class ARG(object):
         afun with risk-neutral parameters
     bfun_q
         bfun with risk-neutral parameters
+    char_fun_ret_q
+        Conditional risk-neutral Characteristic function (return)
+    char_fun_vol
+        Conditional Characteristic function (volatility)
+    char_fun_ret
+        Conditional Characteristic function (return)
     dafun
         Derivative of a(u) function wrt scale, rho, and delta
     dbfun
@@ -104,6 +110,12 @@ class ARG(object):
         Estimate model parameters via Maximum Likelihood
     momcond
         Moment conditions for spectral GMM estimator
+    cos_restriction
+        Restrictions used in COS method of option pricing
+    charfun
+        Risk-neutral conditional characteristic function (one argument only)
+    option_premium
+        Model implied option premium via COS method
 
     """
 
@@ -587,7 +599,7 @@ class ARG(object):
                                + self.upsn_q(varg, periods-1, param)
 
     def char_fun_ret_q(self, varg, param):
-        """Conditional risk-neutral Characteristic function (return).
+        r"""Conditional risk-neutral Characteristic function (return).
 
         Parameters
         ----------
@@ -600,6 +612,10 @@ class ARG(object):
         -------
         (nobs, nv) array
             Characteristic function for each observation and each grid point
+
+        Notes
+        -----
+        Conditional on :math:`\sigma_t` only
 
         """
         if not isinstance(self.vol, float):
@@ -636,7 +652,7 @@ class ARG(object):
             - np.ones((self.vol[1:].shape[0], 1)) * self.bfun(uarg, param))
 
     def char_fun_ret(self, uarg, param):
-        """Conditional Characteristic function (return).
+        r"""Conditional Characteristic function (return).
 
         Parameters
         ----------
@@ -649,6 +665,10 @@ class ARG(object):
         -------
         (nobs-1, nu) array
             Characteristic function for each observation and each grid point
+
+        Notes
+        -----
+        Conditional on current :math:`\sigma_{t+1}` and past :math:`\sigma_t`
 
         """
         return np.exp(-self.vol[1:, np.newaxis] * self.alpha(uarg, param) \
@@ -1487,7 +1507,24 @@ class ARG(object):
                        riskfree=None, call=True):
         """Model implied option premium via COS method.
 
+        Parameters
+        ----------
+        vol : float
+            Current volatility
+        price : array_like
+            Current asset price
+        strike : array_like
+            Strike price of the contract
+        maturity : float
+            Fraction of a year
+        riskfree : array_like
+            Risk-free rate, annualized
+        call : bool
+            Call/Put flag
+
         """
+        if not isinstance(maturity, float):
+            raise ValueError('Maturity must be float!')
         self.maturity = maturity
         self.riskfree = riskfree
         self.vol = vol

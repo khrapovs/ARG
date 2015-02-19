@@ -10,7 +10,7 @@ import numpy as np
 import scipy.optimize as sco
 
 from argamma import ARG, ARGparams
-from mygmm import Results
+from argamma.mygmm import Results
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -205,7 +205,6 @@ class ARGTestCase(ut.TestCase):
         riskfree = 0.
         argmodel = ARG(vol=vol, maturity=maturity, riskfree=riskfree)
         varg = 1.
-        periods = 10
 
         cfun = lambda: argmodel.char_fun_ret_q(varg, param)
 
@@ -488,6 +487,13 @@ class ARGTestCase(ut.TestCase):
                                           maturity=maturity, riskfree=riskfree,
                                           call=True)
         self.assertEqual(premium.shape, (1,))
+
+        maturity = [1, 2]
+        fun = lambda: argmodel.option_premium(vol=vol, price=price,
+                                              strike=strike, maturity=maturity,
+                                              riskfree=riskfree, call=True)
+
+        self.assertRaises(ValueError, fun)
 
 
 if __name__ == '__main__':
