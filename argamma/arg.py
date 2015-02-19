@@ -72,6 +72,8 @@ class ARG(object):
         c(u) function
     convert_to_q
         Convert parameters to risk-neutral
+    center
+        No-arb restriction parameter
     afun_q
         afun with risk-neutral parameters
     bfun_q
@@ -606,6 +608,8 @@ class ARG(object):
             raise ValueError('Maturity is not loaded!')
         if self.riskfree is None:
             raise ValueError('Risk-free rate is not loaded!')
+        if np.iscomplex(varg).any():
+            raise ValueError('Argument must be real!')
 
         periods = int(self.maturity * 365)
         return np.exp(- self.vol * self.psin_q(-1j * varg, periods, param) \
