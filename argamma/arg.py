@@ -35,7 +35,7 @@ import numdifftools as nd
 from statsmodels.tsa.tsatools import lagmat
 
 from .argparams import ARGparams
-from argamma.mygmm import GMM
+from mygmm import GMM
 from fangoosterlee import cosmethod
 
 
