@@ -386,6 +386,42 @@ class ARG(object):
         """
         return uarg * self.bfun(- self.center(param), param)
 
+    def beta_q(self, uarg, param):
+        """Function beta(), risk-neutral version.
+
+        Parameters
+        ----------
+        uarg : array
+            Grid
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        array
+            Same dimension as uarg
+
+        """
+        return uarg * self.afun_q(- self.center(param), param)
+
+    def gamma_q(self, uarg, param):
+        """Function gamma(), risk-neutral version.
+
+        Parameters
+        ----------
+        uarg : array
+            Grid
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        array
+            Same dimension as uarg
+
+        """
+        return uarg * self.bfun_q(- self.center(param), param)
+
     def char_fun_vol(self, uarg, param):
         """Conditional Characteristic function (volatility).
 
