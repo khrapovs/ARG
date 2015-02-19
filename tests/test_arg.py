@@ -54,14 +54,14 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(param.price_ret, float)
         self.assertIsInstance(param.price_vol, float)
 
-        phi, price_vol, price_ret = -.5, -5, 5
+        phi, price_ret = -.5, 5
         theta_true = [phi, price_ret]
         param = ARGparams(phi=phi, price_ret=price_ret)
 
         self.assertIsInstance(param.get_theta_ret(), np.ndarray)
         np.testing.assert_array_equal(param.get_theta_ret(), theta_true)
 
-        phi, price_vol, price_ret = .1, 2, 3
+        phi, price_ret = .1, 3
         theta_true = [phi, price_ret]
         param.update(theta_ret=theta_true)
 
@@ -72,7 +72,7 @@ class ARGTestCase(ut.TestCase):
         """Test parameter class for joint parameters."""
 
         scale, rho, delta = .01**2, .9, 1.1
-        phi, price_vol, price_ret = -.5, -1, 1
+        phi, price_ret = -.5, 1
         param = ARGparams(scale=scale, rho=rho, delta=delta,
                           phi=phi, price_ret=price_ret)
 
@@ -333,7 +333,6 @@ class ARGTestCase(ut.TestCase):
         """Test moment condition method."""
         theta = np.array([1, 1, 1])
         uarg = np.array([-1, 0, 1])
-        param = ARGparams()
         argmodel = ARG()
         self.assertRaises(ValueError, lambda: argmodel.momcond_vol(theta))
         fun = lambda: argmodel.momcond_vol(theta, uarg=uarg)
