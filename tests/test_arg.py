@@ -86,26 +86,26 @@ class ARGTestCase(ut.TestCase):
 
         np.testing.assert_array_equal(param.get_theta(), theta_true)
 
-#    def test_conversion_to_q(self):
-#        """Test conversion to Q measure."""
-#        scale, rho, delta = 1, 2, 3
-#        phi, price_vol, price_ret = -.5, -5, 5
-#        param = ARGparams(scale=scale, rho=rho, delta=delta,
-#                          phi=phi, price_ret=price_ret, price_vol=price_vol)
-#        argmodel = ARG()
-#        param_q = argmodel.convert_to_q(param)
-#
-#        self.assertIsInstance(param_q, ARGparams)
-#
-#        factor = 1/(1 + scale * (price_vol \
-#            + argmodel.alpha(price_ret, param)))
-#        scale = scale * factor
-#        beta = param.beta * factor
-#        rho = scale * beta
-#
-#        self.assertEqual(param_q.scale, scale)
-#        self.assertEqual(param_q.rho, rho)
-#        self.assertEqual(param_q.delta, delta)
+    def test_conversion_to_q(self):
+        """Test conversion to Q measure."""
+        scale, rho, delta = 1, 2, 3
+        phi, price_vol, price_ret = -.5, -5, 5
+        param = ARGparams(scale=scale, rho=rho, delta=delta,
+                          phi=phi, price_ret=price_ret, price_vol=price_vol)
+        argmodel = ARG()
+        param_q = argmodel.convert_to_q(param)
+
+        self.assertIsInstance(param_q, ARGparams)
+
+        factor = 1/(1 + scale * (price_vol \
+            + argmodel.alpha(price_ret, param)))
+        scale = scale * factor
+        beta = param.beta * factor
+        rho = scale * beta
+
+        self.assertEqual(param_q.scale, scale)
+        self.assertEqual(param_q.rho, rho)
+        self.assertEqual(param_q.delta, delta)
 
     def test_uncond_moments(self):
         """Test unconditional moments of the ARG model."""

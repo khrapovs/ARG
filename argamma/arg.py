@@ -122,11 +122,12 @@ class ARG(object):
             * (param.price_vol + self.alpha(param.price_ret, param)))
         if factor <= 0 or param.get_theta_vol().min() <= 0:
             raise ValueError('Invalid parameters in Q conversion!')
+        delta = param.delta
         scale = param.scale * factor
         beta = param.beta * factor
         rho = scale * beta
         param = ARGparams()
-        param.update(theta_vol=[scale, rho, param.delta])
+        param.update(theta_vol=[scale, rho, delta])
         return param
 
     def load_data(self, vol=None, ret=None):
@@ -527,9 +528,6 @@ class ARG(object):
             Same dimension as uarg
 
         """
-#        if not isinstance(varg, float):
-#            raise ValueError('Only float arguments are supported so far!')
-
         if periods == 1:
             return self.lfun_q(0., varg, param)
         else:
@@ -555,9 +553,6 @@ class ARG(object):
             Same dimension as uarg
 
         """
-#        if not isinstance(varg, float):
-#            raise ValueError('Only float arguments are supported so far!')
-
         if periods == 1:
             return self.gfun_q(0., varg, param)
         else:
