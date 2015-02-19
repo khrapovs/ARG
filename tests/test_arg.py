@@ -97,7 +97,8 @@ class ARGTestCase(ut.TestCase):
 #
 #        self.assertIsInstance(param_q, ARGparams)
 #
-#        factor = 1/(1 + scale * (price_vol + argmodel.alpha(price_ret, param)))
+#        factor = 1/(1 + scale * (price_vol \
+#            + argmodel.alpha(price_ret, param)))
 #        scale = scale * factor
 #        beta = param.beta * factor
 #        rho = scale * beta
@@ -155,6 +156,15 @@ class ARGTestCase(ut.TestCase):
             self.assertEqual(uarg.shape, argmodel.gamma(uarg, param).shape)
             self.assertEqual(uarg.shape, argmodel.beta_q(uarg, param).shape)
             self.assertEqual(uarg.shape, argmodel.gamma_q(uarg, param).shape)
+
+    def test_joint_functions(self):
+        """Test functions lfun, gfun of ARG model."""
+        param = ARGparams()
+        argmodel = ARG()
+        uarg, varg = 1., 2.
+
+        self.assertIsInstance(argmodel.lfun(uarg, varg, param), float)
+        self.assertIsInstance(argmodel.gfun(uarg, varg, param), float)
 
     def test_abc_derivatives(self):
         """Test derivatives of functions a, b, c of ARG model."""
