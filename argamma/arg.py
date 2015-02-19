@@ -423,7 +423,7 @@ class ARG(object):
         return uarg * self.bfun_q(- self.center(param), param)
 
     def lfun(self, uarg, varg, param):
-        """Function l(u, v).
+        """Function l(u, v) in joint characteristic function.
 
         Parameters
         ----------
@@ -446,7 +446,7 @@ class ARG(object):
             + self.beta(varg, param)
 
     def gfun(self, uarg, varg, param):
-        """Function g(u, v).
+        """Function g(u, v) in joint characteristic function.
 
         Parameters
         ----------
@@ -467,6 +467,54 @@ class ARG(object):
             raise ValueError('Only float arguments are supported so far!')
         return self.bfun(uarg + self.alpha(varg, param), param) \
             + self.gamma(varg, param)
+
+    def lfun_q(self, uarg, varg, param):
+        """Function l(u, v) in joint risk-neutral characteristic function.
+
+        Parameters
+        ----------
+        uarg : float
+            Grid for volatility
+        uarg : float
+            Grid for returns
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        float
+            Same dimension as uarg
+
+        """
+        if not isinstance(uarg, float) or not isinstance(varg, float):
+            raise ValueError('Only float arguments are supported so far!')
+        return self.lfun(uarg + param.price_vol,
+                         varg + param.price_ret, param) \
+            - self.lfun(param.price_vol, param.price_ret, param)
+
+    def gfun_q(self, uarg, varg, param):
+        """Function g(u, v) in joint risk-neutral characteristic function.
+
+        Parameters
+        ----------
+        uarg : array
+            Grid for volatility
+        uarg : array
+            Grid for returns
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        float
+            Same dimension as uarg
+
+        """
+        if not isinstance(uarg, float) or not isinstance(varg, float):
+            raise ValueError('Only float arguments are supported so far!')
+        return self.gfun(uarg + param.price_vol,
+                         varg + param.price_ret, param) \
+            - self.gfun(param.price_vol, param.price_ret, param)
 
     def char_fun_vol(self, uarg, param):
         """Conditional Characteristic function (volatility).

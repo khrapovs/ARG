@@ -165,6 +165,8 @@ class ARGTestCase(ut.TestCase):
 
         self.assertIsInstance(argmodel.lfun(uarg, varg, param), float)
         self.assertIsInstance(argmodel.gfun(uarg, varg, param), float)
+        self.assertIsInstance(argmodel.lfun_q(uarg, varg, param), float)
+        self.assertIsInstance(argmodel.gfun_q(uarg, varg, param), float)
 
     def test_abc_derivatives(self):
         """Test derivatives of functions a, b, c of ARG model."""
