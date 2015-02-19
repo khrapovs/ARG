@@ -10,7 +10,7 @@ import numpy as np
 import scipy.optimize as sco
 
 from argamma import ARG, ARGparams
-from mygmm import Results
+from argamma.mygmm import Results
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -132,10 +132,14 @@ class ARGTestCase(ut.TestCase):
             self.assertIsInstance(argmodel.afun(uarg, param), np.ndarray)
             self.assertIsInstance(argmodel.bfun(uarg, param), np.ndarray)
             self.assertIsInstance(argmodel.cfun(uarg, param), np.ndarray)
+            self.assertIsInstance(argmodel.afun_q(uarg, param), np.ndarray)
+            self.assertIsInstance(argmodel.bfun_q(uarg, param), np.ndarray)
 
             self.assertEqual(uarg.shape, argmodel.afun(uarg, param).shape)
             self.assertEqual(uarg.shape, argmodel.bfun(uarg, param).shape)
             self.assertEqual(uarg.shape, argmodel.cfun(uarg, param).shape)
+            self.assertEqual(uarg.shape, argmodel.afun_q(uarg, param).shape)
+            self.assertEqual(uarg.shape, argmodel.bfun_q(uarg, param).shape)
 
     def test_ret_functions(self):
         """Test functions alpha, beta, gamma of ARG model."""

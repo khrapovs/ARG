@@ -35,7 +35,7 @@ import numdifftools as nd
 from statsmodels.tsa.tsatools import lagmat
 
 from .argparams import ARGparams
-from mygmm import GMM
+from argamma.mygmm import GMM
 from fangoosterlee import cosmethod
 
 
@@ -70,6 +70,12 @@ class ARG(object):
         b(u) function
     cfun
         c(u) function
+    convert_to_q
+        Convert parameters to risk-neutral
+    afun_q
+        afun with risk-neutral parameters
+    bfun_q
+        bfun with risk-neutral parameters
     dafun
         Derivative of a(u) function wrt scale, rho, and delta
     dbfun
@@ -1487,4 +1493,5 @@ class ARG(object):
 
 
 if __name__ == '__main__':
+
     pass
