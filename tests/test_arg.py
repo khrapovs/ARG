@@ -168,6 +168,44 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(argmodel.lfun_q(uarg, varg, param), float)
         self.assertIsInstance(argmodel.gfun_q(uarg, varg, param), float)
 
+        uarg, varg = 1., np.arange(5)
+
+        self.assertEqual(argmodel.lfun(uarg, varg, param).shape, varg.shape)
+        self.assertEqual(argmodel.gfun(uarg, varg, param).shape, varg.shape)
+        self.assertEqual(argmodel.lfun_q(uarg, varg, param).shape, varg.shape)
+        self.assertEqual(argmodel.gfun_q(uarg, varg, param).shape, varg.shape)
+
+    def test_joint_multiperiod_functions(self):
+        """Test functions psin, upsn of ARG model."""
+        param = ARGparams()
+        argmodel = ARG()
+        varg = 1.
+        periods = 10
+
+        self.assertIsInstance(argmodel.psin_q(varg, periods, param), float)
+        self.assertIsInstance(argmodel.upsn_q(varg, periods, param), float)
+
+        varg = np.arange(5)
+        periods = 10
+
+        self.assertEqual(argmodel.psin_q(varg, periods, param).shape,
+                         varg.shape)
+        self.assertEqual(argmodel.upsn_q(varg, periods, param).shape,
+                         varg.shape)
+
+    def test_char_fun_ret_q(self):
+        """Test risk-neutral return charcteristic function."""
+        param = ARGparams()
+        vol = np.arange(5)
+        argmodel = ARG(vol=vol)
+        varg = 1.
+        periods = 10
+
+        cfun = argmodel.char_fun_ret_q(varg, periods, param)
+
+        self.assertIsInstance(cfun, np.ndarray)
+        self.assertEqual(cfun.shape, (vol.shape[0]-1, 1))
+
     def test_abc_derivatives(self):
         """Test derivatives of functions a, b, c of ARG model."""
 

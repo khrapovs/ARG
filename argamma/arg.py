@@ -429,19 +429,17 @@ class ARG(object):
         ----------
         uarg : float
             Grid for volatility
-        uarg : float
+        varg : (nv, ) array
             Grid for returns
         param : ARGparams instance
             Model parameters
 
         Returns
         -------
-        float
+        array
             Same dimension as uarg
 
         """
-        if not isinstance(uarg, float) or not isinstance(varg, float):
-            raise ValueError('Only float arguments are supported so far!')
         return self.afun(uarg + self.alpha(varg, param), param) \
             + self.beta(varg, param)
 
@@ -452,19 +450,17 @@ class ARG(object):
         ----------
         uarg : array
             Grid for volatility
-        uarg : array
+        varg : (nv, ) array
             Grid for returns
         param : ARGparams instance
             Model parameters
 
         Returns
         -------
-        float
+        array
             Same dimension as uarg
 
         """
-        if not isinstance(uarg, float) or not isinstance(varg, float):
-            raise ValueError('Only float arguments are supported so far!')
         return self.bfun(uarg + self.alpha(varg, param), param) \
             + self.gamma(varg, param)
 
@@ -475,19 +471,17 @@ class ARG(object):
         ----------
         uarg : float
             Grid for volatility
-        uarg : float
+        varg : (nv, ) array
             Grid for returns
         param : ARGparams instance
             Model parameters
 
         Returns
         -------
-        float
+        array
             Same dimension as uarg
 
         """
-        if not isinstance(uarg, float) or not isinstance(varg, float):
-            raise ValueError('Only float arguments are supported so far!')
         return self.lfun(uarg + param.price_vol,
                          varg + param.price_ret, param) \
             - self.lfun(param.price_vol, param.price_ret, param)
@@ -497,24 +491,102 @@ class ARG(object):
 
         Parameters
         ----------
-        uarg : array
+        uarg : float
             Grid for volatility
-        uarg : array
+        varg : (nv, ) array
             Grid for returns
         param : ARGparams instance
             Model parameters
 
         Returns
         -------
-        float
+        array
             Same dimension as uarg
 
         """
-        if not isinstance(uarg, float) or not isinstance(varg, float):
-            raise ValueError('Only float arguments are supported so far!')
         return self.gfun(uarg + param.price_vol,
                          varg + param.price_ret, param) \
             - self.gfun(param.price_vol, param.price_ret, param)
+
+    def psin_q(self, varg, periods, param):
+        """Function psi(v, n) in risk-neutral characteristic function
+        of returns for n periods.
+
+        Parameters
+        ----------
+        varg : (nv, ) array
+            Grid for returns
+        periods : int
+            Numbers of periods
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        array
+            Same dimension as uarg
+
+        """
+#        if not isinstance(varg, float):
+#            raise ValueError('Only float arguments are supported so far!')
+
+        if periods == 1:
+            return self.lfun_q(0., varg, param)
+        else:
+            return self.lfun_q(self.psin_q(varg, periods-1, param),
+                               varg, param)
+
+    def upsn_q(self, varg, periods, param):
+        """Function ups(v, n) in risk-neutral characteristic function
+        of returns for n periods.
+
+        Parameters
+        ----------
+        varg : (nv, ) array
+            Grid for returns
+        periods : int
+            Numbers of periods
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        array
+            Same dimension as uarg
+
+        """
+#        if not isinstance(varg, float):
+#            raise ValueError('Only float arguments are supported so far!')
+
+        if periods == 1:
+            return self.gfun_q(0., varg, param)
+        else:
+            return self.gfun_q(self.psin_q(varg, periods-1, param),
+                               varg, param) \
+                               + self.upsn_q(varg, periods-1, param)
+
+    def char_fun_ret_q(self, varg, periods, param):
+        """Conditional risk-neutral Characteristic function (return).
+
+        Parameters
+        ----------
+        varg : (nv, ) array
+            Grid for returns
+        periods : int
+            Numbers of periods
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        (nobs-1, nv) array
+            Characteristic function for each observation and each grid point
+
+        """
+        return np.exp(- self.vol[:-1, np.newaxis] \
+            * self.psin_q(varg, periods, param) \
+            - np.ones((self.vol[1:].shape[0], 1)) \
+            * self.upsn_q(varg, periods, param))
 
     def char_fun_vol(self, uarg, param):
         """Conditional Characteristic function (volatility).
