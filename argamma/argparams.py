@@ -26,6 +26,7 @@ class ARGparams(object):
     Raises
     ------
     AssertionError
+    ValueError
 
     """
     def __init__(self, scale=.001, rho=.9, delta=1.1, phi=-.5,
@@ -139,6 +140,8 @@ class ARGparams(object):
         """This is what is shown when you print() the instance.
 
         """
-        params = (self.scale, self.rho, self.delta)
-        string = "scale = %.2f, rho = %.2f, delta = %.2f" % params
+        params_vol = (self.scale, self.rho, self.delta)
+        params_ret = (self.phi, self.price_ret)
+        string = "scale = %.4f, rho = %.4f, delta = %.4f" % params_vol
+        string += "\nphi = %.4f, price_ret = %.4f" % params_ret
         return string
