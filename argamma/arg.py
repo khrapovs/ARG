@@ -36,6 +36,8 @@ from statsmodels.tsa.tsatools import lagmat
 
 from .argparams import ARGparams
 from mygmm import GMM
+from fangoosterlee import cosmethod
+
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -97,7 +99,8 @@ class ARG(object):
 
     """
 
-    def __init__(self, vol=None, ret=None, param=None, maturity=None):
+    def __init__(self, vol=None, ret=None, param=None,
+                 maturity=None, riskfree=None):
         """Initialize class instance.
 
         vol : array, optional
@@ -109,12 +112,15 @@ class ARG(object):
         maturity : float, optional
             Maturity of the option or simply time horizon.
             Fraction of a year, i.e. 30/365
+        riskfree : float, optional
+            Risk-free annualized rate of return
 
         """
         self.vol = vol
         self.ret = ret
         self.param = param
         self.maturity = maturity
+        self.riskfree = riskfree
 
     def convert_to_q(self, param):
         """Convert physical (P) parameters to risk-neutral (Q) parameters.
@@ -572,28 +578,33 @@ class ARG(object):
                                varg, param) \
                                + self.upsn_q(varg, periods-1, param)
 
-    def char_fun_ret_q(self, varg, periods, param):
+    def char_fun_ret_q(self, varg, param):
         """Conditional risk-neutral Characteristic function (return).
 
         Parameters
         ----------
         varg : (nv, ) array
             Grid for returns
-        periods : int
-            Numbers of periods
         param : ARGparams instance
             Model parameters
 
         Returns
         -------
-        (nobs-1, nv) array
+        (nobs, nv) array
             Characteristic function for each observation and each grid point
 
         """
-        return np.exp(- self.vol[:-1, np.newaxis] \
-            * self.psin_q(varg, periods, param) \
-            - np.ones((self.vol[1:].shape[0], 1)) \
-            * self.upsn_q(varg, periods, param))
+        if not isinstance(self.vol, float):
+            raise ValueError('Only float volatility is supported!')
+        if self.maturity is None:
+            raise ValueError('Maturity is not loaded!')
+        if self.riskfree is None:
+            raise ValueError('Risk-free rate is not loaded!')
+
+        periods = int(self.maturity * 365)
+        return np.exp(- self.vol * self.psin_q(-1j * varg, periods, param) \
+            - self.upsn_q(-1j * varg, periods, param)
+            - 1j * varg * self.riskfree * self.maturity)
 
     def char_fun_vol(self, uarg, param):
         """Conditional Characteristic function (volatility).
@@ -1403,7 +1414,7 @@ class ARG(object):
 
         return param_final, results
 
-    def cos_restriction(self, riskfree=None):
+    def cos_restriction(self):
         """Restrictions used in COS method of option pricing.
 
         Parameters
@@ -1426,14 +1437,16 @@ class ARG(object):
         This method is used by COS method of option pricing
 
         """
+        if not isinstance(self.vol, float):
+            raise ValueError('Only float volatility is supported!')
         L = 100.
-        c1 = riskfree * self.maturity
-        c2 = self.vol.mean() * self.maturity * 365
+        c1 = self.riskfree * self.maturity
+        c2 = self.vol * self.maturity * 365
 
-        a = c1 - L * c2**.5
-        b = c1 + L * c2**.5
+        lolim = c1 - L * c2**.5
+        uplim = c1 + L * c2**.5
 
-        return L, c1, c2, a, b
+        return L, c1, c2, lolim, uplim
 
     def charfun(self, varg):
         """Risk-neutral conditional characteristic function.
@@ -1458,8 +1471,19 @@ class ARG(object):
         if self.param is None:
             raise ValueError('Parameters are not set!')
 
-        periods = int(self.maturity * 365)
-        return self.char_fun_ret_q(varg, periods, self.param)
+        return self.char_fun_ret_q(varg, self.param)
+
+    def option_premium(self, vol=None, price=None, strike=None, maturity=None,
+                       riskfree=None, call=True):
+        """Model implied option premium via COS method.
+
+        """
+        self.maturity = maturity
+        self.riskfree = riskfree
+        self.vol = vol
+
+        return cosmethod(self, price=price, strike=strike, maturity=maturity,
+                         riskfree=riskfree, call=call)
 
 
 if __name__ == '__main__':

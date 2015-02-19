@@ -197,35 +197,49 @@ class ARGTestCase(ut.TestCase):
         """Test risk-neutral return charcteristic function."""
         param = ARGparams()
         vol = np.arange(5)
-        argmodel = ARG(vol=vol)
+        maturity = .1
+        riskfree = 0.
+        argmodel = ARG(vol=vol, maturity=maturity, riskfree=riskfree)
         varg = 1.
         periods = 10
 
-        cfun = argmodel.char_fun_ret_q(varg, periods, param)
+        cfun = lambda: argmodel.char_fun_ret_q(varg, param)
 
-        self.assertIsInstance(cfun, np.ndarray)
-        self.assertEqual(cfun.shape, (vol.shape[0]-1, 1))
+        self.assertRaises(ValueError, cfun)
+
+        param = ARGparams()
+        vol = 1.
+        argmodel = ARG(vol=vol, maturity=.1, riskfree=0.)
+        varg = 1.
+
+        cfun = argmodel.char_fun_ret_q(varg, param)
+
+        self.assertIsInstance(cfun, complex)
 
     def test_charfun(self):
         """Test risk-neutral return charcteristic function."""
         param = ARGparams()
-        vol = np.arange(5)
+        vol = 1.
         maturity = 30/365
-        argmodel = ARG(vol=vol, param=param, maturity=maturity)
+        riskfree = 0.
+        argmodel = ARG(vol=vol, param=param, maturity=maturity,
+                       riskfree=riskfree)
         varg = np.arange(5)
 
         cfun = argmodel.charfun(varg)
 
         self.assertIsInstance(cfun, np.ndarray)
-        self.assertEqual(cfun.shape, (vol.shape[0]-1, varg.shape[0]))
+        self.assertEqual(cfun.shape, varg.shape)
 
     def test_cos_restriction(self):
         """Test cos_restriction method."""
         param = ARGparams()
-        vol = np.arange(5)
+        vol = 1.
         maturity = 30/365
-        argmodel = ARG(vol=vol, param=param, maturity=maturity)
-        L, c1, c2, a, b = argmodel.cos_restriction(riskfree=0.)
+        riskfree = 0.
+        argmodel = ARG(vol=vol, param=param,
+                       maturity=maturity, riskfree=riskfree)
+        L, c1, c2, a, b = argmodel.cos_restriction()
 
         self.assertIsInstance(L, float)
         self.assertIsInstance(c1, float)
@@ -447,6 +461,29 @@ class ARGTestCase(ut.TestCase):
         self.assertIsInstance(param_final.get_theta_vol(), np.ndarray)
         self.assertEqual(results.theta.shape[0],
                          param_true.get_theta_vol().shape[0])
+
+    def test_option_premium(self):
+        """Test option pricing for the model."""
+        price, strike = 100, 90
+        riskfree, maturity = 0, 30/365
+        vol = .2**2/365
+
+        rho = .55
+        delta = .75
+        dailymean = .2**2/365
+        scale = dailymean * (1 - rho) / delta
+        phi = -.0
+        price_vol = -16.0
+        price_ret = 20.95
+
+        param = ARGparams(scale=scale, rho=rho, delta=delta,
+                          phi=phi, price_ret=price_ret, price_vol=price_vol)
+        argmodel = ARG(param=param)
+
+        premium = argmodel.option_premium(vol=vol, price=price, strike=strike,
+                                          maturity=maturity, riskfree=riskfree,
+                                          call=True)
+        self.assertEqual(premium.shape, (1,))
 
 
 if __name__ == '__main__':
