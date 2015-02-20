@@ -10,7 +10,7 @@ import numpy as np
 import scipy.optimize as sco
 
 from argamma import ARG, ARGparams
-from mygmm.mygmm import Results
+from mygmm.mygmm.mygmm import Results
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
