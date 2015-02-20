@@ -488,6 +488,13 @@ class ARGTestCase(ut.TestCase):
                                           call=True)
         self.assertEqual(premium.shape, (1,))
 
+        strike = np.exp(np.linspace(-.1, .1, 10))
+
+        premium = argmodel.option_premium(vol=vol, price=price, strike=strike,
+                                          maturity=maturity, riskfree=riskfree,
+                                          call=True)
+        self.assertEqual(premium.shape, strike.shape)
+
         maturity = [1, 2]
         fun = lambda: argmodel.option_premium(vol=vol, price=price,
                                               strike=strike, maturity=maturity,
