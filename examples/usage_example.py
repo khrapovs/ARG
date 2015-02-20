@@ -17,6 +17,9 @@ __email__ = "khrapovs@gmail.com"
 __status__ = "Development"
 
 
+__all__ = ['plot_smiles']
+
+
 def play_with_arg():
     param = ARGparams()
     print(param)
@@ -292,33 +295,75 @@ def plot_cf():
     plt.show()
 
 
-def plot_smiles():
+def plot_smiles(fname=None):
     """Plot model-implied volatility smiles.
 
     """
-    price, strike = 100, 90
+    price = 1
+    moneyness = np.linspace(-.1, .1, 50)
+    strike = np.exp(moneyness) * price
     riskfree, maturity = 0, 30/365
     call = True
     current_vol = .2**2/365
 
-    rho = .55
-    delta = .75
-    dailymean = .2**2/365
-    scale = dailymean * (1 - rho) / delta
-    phi = -.0
-    price_vol = -16.0
-    price_ret = 20.95
+    rho = .9
+    delta = 1.1
+    scale = current_vol * (1 - rho) / delta
+    phi = -.5
+    price_vol = -.1
+    price_ret = .5
 
-    param = ARGparams(scale=scale, rho=rho, delta=delta,
-                      phi=phi, price_ret=price_ret, price_vol=price_vol)
-    argmodel = ARG(param=param)
+    points = 5
 
-    premium = argmodel.option_premium(vol=current_vol, price=price,
-                                      strike=strike, maturity=maturity,
-                                      riskfree=riskfree, call=call)
-    moneyness = lfmoneyness(price, strike, riskfree, maturity)
-    vol = imp_vol(moneyness, maturity, premium, call)
-    print(vol)
+    sns.set_context('paper')
+    sns.set_palette(sns.color_palette("binary_r", desat=.5))
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(7, 3))
+    loc = 'upper center'
+
+    phis = np.linspace(0, -.5, points)
+
+    for phi in phis:
+        param = ARGparams(scale=scale, rho=rho, delta=delta,
+                          phi=phi, price_ret=price_ret, price_vol=price_vol)
+        argmodel = ARG(param=param)
+
+        premium = argmodel.option_premium(vol=current_vol, price=price,
+                                          strike=strike, maturity=maturity,
+                                          riskfree=riskfree, call=call)
+
+        moneyness = lfmoneyness(price, strike, riskfree, maturity)
+
+        vol = imp_vol(moneyness, maturity, premium/price, call)
+        axes[0].plot(moneyness*100, vol*100, label=str(phi))
+
+    axes[0].legend(title='Leverage, $\phi$', loc=loc)
+    axes[0].set_xlabel('Log-forward moneyness, $\log(F/S)$, %')
+    axes[0].set_ylabel('Implied volatility, annualized %')
+
+    maturities = np.linspace(30, 90, points) / 365
+    phi = 0.
+
+    for matur in maturities:
+        param = ARGparams(scale=scale, rho=rho, delta=delta,
+                          phi=phi, price_ret=price_ret, price_vol=price_vol)
+        argmodel = ARG(param=param)
+
+        premium = argmodel.option_premium(vol=current_vol, price=price,
+                                          strike=strike, maturity=matur,
+                                          riskfree=riskfree, call=call)
+
+        moneyness = lfmoneyness(price, strike, riskfree, matur)
+
+        vol = imp_vol(moneyness, matur, premium/price, call)
+        axes[1].plot(moneyness*100, vol*100, label=str(int(matur*365)))
+
+    axes[1].legend(title='Maturity, $T$', loc=loc)
+    axes[1].set_xlabel('Log-forward moneyness, $\log(F/S)$, %')
+    axes[1].set_ylabel('Implied volatility, annualized %')
+    plt.tight_layout()
+    if fname is not None:
+        plt.savefig(fname)
+    plt.show()
 
 
 if __name__ == '__main__':

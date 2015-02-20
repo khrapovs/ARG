@@ -34,9 +34,9 @@ import numdifftools as nd
 
 from statsmodels.tsa.tsatools import lagmat
 
-from argamma import ARGparams
-from mygmm.mygmm.mygmm import GMM
-from fangoosterlee.cosmethod import cosmethod
+from argamma.argamma import ARGparams
+from mygmm import GMM
+from fangoosterlee import cosmethod
 
 
 __author__ = "Stanislav Khrapov"
