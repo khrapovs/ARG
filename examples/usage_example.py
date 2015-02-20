@@ -10,7 +10,7 @@ import matplotlib.pylab as plt
 import seaborn as sns
 
 from argamma import ARG, ARGparams
-from impvol import imp_vol, lfmoneyness
+from argamma.impvol import imp_vol, lfmoneyness
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"

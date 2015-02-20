@@ -9,8 +9,8 @@ import unittest as ut
 import numpy as np
 import scipy.optimize as sco
 
-from argamma import ARG, ARGparams
-from mygmm import Results
+from argamma.argamma import ARG, ARGparams
+from argamma.mygmm import Results
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
