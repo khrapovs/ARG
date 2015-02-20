@@ -10,6 +10,7 @@ import matplotlib.pylab as plt
 import seaborn as sns
 
 from argamma import ARG, ARGparams
+from impvol import imp_vol, lfmoneyness
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -291,6 +292,35 @@ def plot_cf():
     plt.show()
 
 
+def plot_smiles():
+    """Plot model-implied volatility smiles.
+
+    """
+    price, strike = 100, 90
+    riskfree, maturity = 0, 30/365
+    call = True
+    current_vol = .2**2/365
+
+    rho = .55
+    delta = .75
+    dailymean = .2**2/365
+    scale = dailymean * (1 - rho) / delta
+    phi = -.0
+    price_vol = -16.0
+    price_ret = 20.95
+
+    param = ARGparams(scale=scale, rho=rho, delta=delta,
+                      phi=phi, price_ret=price_ret, price_vol=price_vol)
+    argmodel = ARG(param=param)
+
+    premium = argmodel.option_premium(vol=current_vol, price=price,
+                                      strike=strike, maturity=maturity,
+                                      riskfree=riskfree, call=call)
+    moneyness = lfmoneyness(price, strike, riskfree, maturity)
+    vol = imp_vol(moneyness, maturity, premium, call)
+    print(vol)
+
+
 if __name__ == '__main__':
 
     np.set_printoptions(precision=4, suppress=True)
@@ -305,7 +335,7 @@ if __name__ == '__main__':
 
 #    pfinal, results = estimate_mle_joint()
 
-    param_final, results = estimate_gmm_vol()
+#    param_final, results = estimate_gmm_vol()
 
 #    param_final, results = estimate_gmm_ret()
 
@@ -313,3 +343,4 @@ if __name__ == '__main__':
 
 #    plot_cf()
 
+    plot_smiles()
