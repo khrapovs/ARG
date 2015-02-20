@@ -1522,9 +1522,17 @@ class ARG(object):
         call : bool
             Call/Put flag
 
+        Returns
+        -------
+        array_like
+            Model implied option premium via COS method
+
         """
         if not isinstance(maturity, float):
             raise ValueError('Maturity must be float!')
+        if not isinstance(vol, float):
+            raise ValueError('Volatility must be float!')
+
         self.maturity = maturity
         self.riskfree = riskfree
         self.vol = vol
