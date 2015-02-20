@@ -12,4 +12,4 @@ Class documentation
 -------------------
 
 .. autoclass:: argamma.arg.ARG
-	:members: afun, bfun, cfun, vsim, vsim2, rsim, load_data, estimate_mle, estimate_gmm
+	:members: afun, bfun, cfun, vsim, vsim2, rsim, load_data, estimate_mle, estimate_gmm, option_premium
