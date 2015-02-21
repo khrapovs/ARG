@@ -592,7 +592,7 @@ class ARG(object):
         Parameters
         ----------
         varg : (nv, ) array
-            Grid for returns
+            Grid for returns. Real values only.
         param : ARGparams instance
             Model parameters
 
@@ -616,7 +616,7 @@ class ARG(object):
             raise ValueError('Argument must be real!')
 
         periods = int(self.maturity * 365)
-        return np.exp(- self.vol * self.psin_q(-1j * varg, periods, param) \
+        return np.exp(- self.vol * self.psin_q(-1j * varg, periods, param)
             - self.upsn_q(-1j * varg, periods, param)
             - 1j * varg * self.riskfree * self.maturity)
 
@@ -626,7 +626,8 @@ class ARG(object):
         Parameters
         ----------
         uarg : array
-            Grid
+            Grid. If real, then returns Laplace transform.
+            If complex, then returns characteristi function.
         param : ARGparams instance
             Model parameters
 
@@ -636,7 +637,7 @@ class ARG(object):
             Characteristic function for each observation and each grid point
 
         """
-        return np.exp(- self.vol[:-1, np.newaxis] * self.afun(uarg, param) \
+        return np.exp(- self.vol[:-1, np.newaxis] * self.afun(uarg, param)
             - np.ones((self.vol[1:].shape[0], 1)) * self.bfun(uarg, param))
 
     def char_fun_ret(self, uarg, param):
@@ -645,7 +646,8 @@ class ARG(object):
         Parameters
         ----------
         uarg : array
-            Grid
+            Grid. If real, then returns Laplace transform.
+            If complex, then returns characteristi function.
         param : ARGparams instance
             Model parameters
 
@@ -659,8 +661,8 @@ class ARG(object):
         Conditional on current :math:`\sigma_{t+1}` and past :math:`\sigma_t`
 
         """
-        return np.exp(-self.vol[1:, np.newaxis] * self.alpha(uarg, param) \
-            - self.vol[:-1, np.newaxis] * self.beta(uarg, param) \
+        return np.exp(-self.vol[1:, np.newaxis] * self.alpha(uarg, param)
+            - self.vol[:-1, np.newaxis] * self.beta(uarg, param)
             - np.ones((self.vol[1:].shape[0], 1)) * self.gamma(uarg, param))
 
     def umean(self, param):
@@ -1472,7 +1474,7 @@ class ARG(object):
         Parameters
         ----------
         varg : array
-            Grid for evaluation of CF
+            Grid for evaluation of CF. Real values only.
 
         Returns
         -------
