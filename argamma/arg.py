@@ -64,10 +64,17 @@ class ARG(object):
 
     Attributes
     ----------
-    vol : (nobs, ) array
-        Volatility time series
-    ret : (nobs, ) array
-        Return time series
+    vol
+        Volatility series
+    ret
+        Asset return series
+    param
+        Parameters of the model
+    maturity
+        Maturity of the option or simply time horizon.
+        Fraction of a year, i.e. 30/365
+    riskfree
+        Risk-free annualized rate of return
 
     Methods
     -------
@@ -77,28 +84,6 @@ class ARG(object):
         b(u) function
     cfun
         c(u) function
-    convert_to_q
-        Convert parameters to risk-neutral
-    center
-        No-arb restriction parameter
-    afun_q
-        afun with risk-neutral parameters
-    bfun_q
-        bfun with risk-neutral parameters
-    char_fun_ret_q
-        Conditional risk-neutral Characteristic function (return)
-    char_fun_vol
-        Conditional Characteristic function (volatility)
-    char_fun_ret
-        Conditional Characteristic function (return)
-    dafun
-        Derivative of a(u) function wrt scale, rho, and delta
-    dbfun
-        Derivative of b(u) function wrt scale, rho, and delta
-    umean
-        Unconditional mean of the volatility process
-    uvar
-        Unconditional variance of the volatility process
     plot_abc
         Vizualize functions a, b, and c
     vsim
@@ -109,20 +94,10 @@ class ARG(object):
         Simulate returns given volatility
     load_data
         Load data to the class
-    likelihood_vol
-        Log-likelihood for ARG(1) volatility model
-    likelihood_ret
-        Log-likelihood for return model
-    likelihood_joint
-        Log-likelihood for joint model
     estimate_mle
         Estimate model parameters via Maximum Likelihood
-    momcond_vol
-        Moment conditions (volatility) for spectral GMM estimator
-    momcond_ret
-        Moment conditions (return) for spectral GMM estimator
-    momcond_joint
-        Moment conditions (return) for spectral GMM estimator
+    estimate_gmm
+        Estimate model parameters using GMM
     cos_restriction
         Restrictions used in COS method of option pricing
     charfun
