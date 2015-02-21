@@ -4,6 +4,13 @@ r"""
 ARG model
 =========
 
+The code is an implementation of ARG model given in [1]_.
+Its major features include:
+
+    * simulation of stochastic volatility and returns
+    * estimation using both MLE and GMM
+    * option pricing
+
 References
 ----------
 
@@ -106,10 +113,16 @@ class ARG(object):
         Log-likelihood for ARG(1) volatility model
     likelihood_ret
         Log-likelihood for return model
+    likelihood_joint
+        Log-likelihood for joint model
     estimate_mle
         Estimate model parameters via Maximum Likelihood
-    momcond
-        Moment conditions for spectral GMM estimator
+    momcond_vol
+        Moment conditions (volatility) for spectral GMM estimator
+    momcond_ret
+        Moment conditions (return) for spectral GMM estimator
+    momcond_joint
+        Moment conditions (return) for spectral GMM estimator
     cos_restriction
         Restrictions used in COS method of option pricing
     charfun
