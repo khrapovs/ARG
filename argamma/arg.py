@@ -107,16 +107,11 @@ class ARG(object):
 
     """
 
-    def __init__(self, vol=None, ret=None, param=None,
-                 maturity=None, riskfree=None):
+    def __init__(self, param=None, maturity=None, riskfree=None):
         """Initialize class instance.
 
         Parameters
         ----------
-        vol : array, optional
-            Volatility series
-        ret : array, optional
-            Asset return series
         param : ARGparams instance, optional
             Parameters of the model
         maturity : float, optional
@@ -126,8 +121,8 @@ class ARG(object):
             Risk-free annualized rate of return
 
         """
-        self.vol = vol
-        self.ret = ret
+        self.vol = None
+        self.ret = None
         self.param = param
         self.maturity = maturity
         self.riskfree = riskfree

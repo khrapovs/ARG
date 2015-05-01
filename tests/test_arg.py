@@ -203,7 +203,8 @@ class ARGTestCase(ut.TestCase):
         vol = np.arange(5)
         maturity = .1
         riskfree = 0.
-        argmodel = ARG(vol=vol, maturity=maturity, riskfree=riskfree)
+        argmodel = ARG(maturity=maturity, riskfree=riskfree)
+        argmodel.load_data(vol=vol)
         varg = 1.
 
         cfun = lambda: argmodel.char_fun_ret_q(varg, param)
@@ -212,7 +213,8 @@ class ARGTestCase(ut.TestCase):
 
         param = ARGparams()
         vol = 1.
-        argmodel = ARG(vol=vol, maturity=.1, riskfree=0.)
+        argmodel = ARG(maturity=.1, riskfree=0.)
+        argmodel.load_data(vol=vol)
         varg = 1.
 
         cfun = argmodel.char_fun_ret_q(varg, param)
@@ -225,8 +227,8 @@ class ARGTestCase(ut.TestCase):
         vol = 1.
         maturity = 30/365
         riskfree = 0.
-        argmodel = ARG(vol=vol, param=param, maturity=maturity,
-                       riskfree=riskfree)
+        argmodel = ARG(param=param, maturity=maturity, riskfree=riskfree)
+        argmodel.load_data(vol=vol)
         varg = np.arange(5)
 
         cfun = argmodel.charfun(varg)
@@ -240,8 +242,8 @@ class ARGTestCase(ut.TestCase):
         vol = 1.
         maturity = 30/365
         riskfree = 0.
-        argmodel = ARG(vol=vol, param=param,
-                       maturity=maturity, riskfree=riskfree)
+        argmodel = ARG(param=param, maturity=maturity, riskfree=riskfree)
+        argmodel.load_data(vol=vol)
         alim, blim = argmodel.cos_restriction()
 
         self.assertIsInstance(alim, float)
@@ -249,8 +251,8 @@ class ARGTestCase(ut.TestCase):
 
         nobs = 10
         vol = np.ones(nobs)
-        argmodel = ARG(vol=vol, param=param,
-                       maturity=maturity, riskfree=riskfree)
+        argmodel = ARG(param=param, maturity=maturity, riskfree=riskfree)
+        argmodel.load_data(vol=vol)
         alim, blim = argmodel.cos_restriction()
 
         self.assertEqual(alim.size, nobs)
