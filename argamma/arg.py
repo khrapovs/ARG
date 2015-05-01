@@ -111,6 +111,8 @@ class ARG(object):
                  maturity=None, riskfree=None):
         """Initialize class instance.
 
+        Parameters
+        ----------
         vol : array, optional
             Volatility series
         ret : array, optional
