@@ -1496,15 +1496,15 @@ class ARG(object):
 
         Parameters
         ----------
-        vol : float
+        vol : array_like
             Current volatility
         moneyness : array_like
             Log-forward moneyness, np.log(strike/price) - riskfree * maturity
-        maturity : float
+        maturity : array_like
             Fraction of a year
         riskfree : array_like
             Risk-free rate, annualized
-        call : bool
+        call : bool array_like
             Call/Put flag
 
         Returns
