@@ -327,11 +327,11 @@ def plot_smiles(fname=None):
                           phi=phi, price_ret=price_ret, price_vol=price_vol)
         argmodel = ARG(param=param)
 
-        premium = argmodel.option_premium(vol=current_vol, price=price,
-                                          strike=strike, maturity=maturity,
-                                          riskfree=riskfree, call=call)
-
         moneyness = lfmoneyness(price, strike, riskfree, maturity)
+
+        premium = argmodel.option_premium(vol=current_vol, moneyness=moneyness,
+                                          maturity=maturity,
+                                          riskfree=riskfree, call=call)
 
         vol = imp_vol(moneyness, maturity, premium/price, call)
         axes[0].plot(moneyness*100, vol*100, label=str(phi))
@@ -348,11 +348,11 @@ def plot_smiles(fname=None):
                           phi=phi, price_ret=price_ret, price_vol=price_vol)
         argmodel = ARG(param=param)
 
-        premium = argmodel.option_premium(vol=current_vol, price=price,
-                                          strike=strike, maturity=matur,
-                                          riskfree=riskfree, call=call)
-
         moneyness = lfmoneyness(price, strike, riskfree, matur)
+
+        premium = argmodel.option_premium(vol=current_vol, moneyness=moneyness,
+                                          maturity=matur,
+                                          riskfree=riskfree, call=call)
 
         vol = imp_vol(moneyness, matur, premium/price, call)
         axes[1].plot(moneyness*100, vol*100, label=str(int(matur*365)))

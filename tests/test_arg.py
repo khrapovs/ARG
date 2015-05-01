@@ -256,7 +256,6 @@ class ARGTestCase(ut.TestCase):
         self.assertEqual(alim.size, nobs)
         self.assertEqual(blim.size, nobs)
 
-
     def test_abc_derivatives(self):
         """Test derivatives of functions a, b, c of ARG model."""
 
