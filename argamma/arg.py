@@ -588,23 +588,27 @@ class ARG(object):
 
         Parameters
         ----------
-        varg : (nv, ) array
+        varg : array_like
             Grid for returns. Real values only.
         param : ARGparams instance
             Model parameters
 
         Returns
         -------
-        (nobs, nv) array
+        array_like
             Characteristic function for each observation and each grid point
 
         Notes
         -----
         Conditional on :math:`\sigma_t` only
+        All market data (vol, maturity, riskfree) can be vectors
+        of the same size, and varg can be a vector of another size,
+        but of transposed shape,
+        i.e. vol = np.ones(5), and varg = np.ones((10, 1))
 
         """
-        if not isinstance(self.vol, float):
-            raise ValueError('Only float volatility is supported!')
+        if self.vol is None:
+            raise ValueError('Volatility is not loaded!')
         if self.maturity is None:
             raise ValueError('Maturity is not loaded!')
         if self.riskfree is None:
@@ -1478,8 +1482,6 @@ class ARG(object):
         This method is used by COS method of option pricing
 
         """
-        if self.maturity is None:
-            raise ValueError('Maturity is not set!')
         if self.param is None:
             raise ValueError('Parameters are not set!')
 

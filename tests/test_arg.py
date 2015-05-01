@@ -200,16 +200,20 @@ class ARGTestCase(ut.TestCase):
     def test_char_fun_ret_q(self):
         """Test risk-neutral return charcteristic function."""
         param = ARGparams()
-        vol = np.arange(5)
+        nobs = 5
+        vol = np.arange(nobs)
         maturity = .1
         riskfree = 0.
         argmodel = ARG(maturity=maturity, riskfree=riskfree)
         argmodel.load_data(vol=vol)
         varg = 1.
 
-        cfun = lambda: argmodel.char_fun_ret_q(varg, param)
+        self.assertEqual(argmodel.char_fun_ret_q(varg, param).size, nobs)
 
-        self.assertRaises(ValueError, cfun)
+        narg = 10
+        varg = np.ones((narg, 1))
+        size = (narg, nobs)
+        self.assertEqual(argmodel.char_fun_ret_q(varg, param).shape, size)
 
         param = ARGparams()
         vol = 1.
@@ -229,12 +233,17 @@ class ARGTestCase(ut.TestCase):
         riskfree = 0.
         argmodel = ARG(param=param, maturity=maturity, riskfree=riskfree)
         argmodel.load_data(vol=vol)
-        varg = np.arange(5)
-
+        narg = 5
+        varg = np.arange(narg)
         cfun = argmodel.charfun(varg)
 
         self.assertIsInstance(cfun, np.ndarray)
-        self.assertEqual(cfun.shape, varg.shape)
+        self.assertEqual(argmodel.charfun(varg).size, narg)
+
+        nobs = 10
+        vol = np.ones((nobs, 1))
+        argmodel.load_data(vol=vol)
+        self.assertEqual(argmodel.charfun(varg).shape, (nobs, narg))
 
     def test_cos_restriction(self):
         """Test cos_restriction method."""
