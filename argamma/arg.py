@@ -1448,27 +1448,22 @@ class ARG(object):
 
         Returns
         -------
-        L : float
-        c1 : float
-        c2 : float
-        a : float
-        b : float
+        alim : float
+        blim : float
 
         Notes
         -----
         This method is used by COS method of option pricing
 
         """
-        if not isinstance(self.vol, float):
-            raise ValueError('Only float volatility is supported!')
         L = 100.
         c1 = self.riskfree * self.maturity
         c2 = self.vol * self.maturity * 365
 
-        lolim = c1 - L * c2**.5
-        uplim = c1 + L * c2**.5
+        alim = c1 - L * c2**.5
+        blim = c1 + L * c2**.5
 
-        return L, c1, c2, lolim, uplim
+        return alim, blim
 
     def charfun(self, varg):
         """Risk-neutral conditional characteristic function.
@@ -1495,7 +1490,7 @@ class ARG(object):
 
         return self.char_fun_ret_q(varg, self.param)
 
-    def option_premium(self, vol=None, price=None, strike=None, maturity=None,
+    def option_premium(self, vol=None, moneyness=None, maturity=None,
                        riskfree=None, call=True):
         """Model implied option premium via COS method.
 
@@ -1503,10 +1498,8 @@ class ARG(object):
         ----------
         vol : float
             Current volatility
-        price : array_like
-            Current asset price
-        strike : array_like
-            Strike price of the contract
+        moneyness : array_like
+            Log-forward moneyness, np.log(strike/price) - riskfree * maturity
         maturity : float
             Fraction of a year
         riskfree : array_like
@@ -1520,17 +1513,11 @@ class ARG(object):
             Model implied option premium via COS method
 
         """
-        if not isinstance(maturity, float):
-            raise ValueError('Maturity must be float!')
-        if not isinstance(vol, float):
-            raise ValueError('Volatility must be float!')
-
         self.maturity = maturity
         self.riskfree = riskfree
         self.vol = vol
 
-        return cosmethod(self, price=price, strike=strike, maturity=maturity,
-                         riskfree=riskfree, call=call)
+        return cosmethod(self, moneyness=moneyness, call=call)
 
 
 if __name__ == '__main__':

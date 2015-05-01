@@ -242,13 +242,20 @@ class ARGTestCase(ut.TestCase):
         riskfree = 0.
         argmodel = ARG(vol=vol, param=param,
                        maturity=maturity, riskfree=riskfree)
-        L, c1, c2, a, b = argmodel.cos_restriction()
+        alim, blim = argmodel.cos_restriction()
 
-        self.assertIsInstance(L, float)
-        self.assertIsInstance(c1, float)
-        self.assertIsInstance(c2, float)
-        self.assertIsInstance(a, float)
-        self.assertIsInstance(b, float)
+        self.assertIsInstance(alim, float)
+        self.assertIsInstance(blim, float)
+
+        nobs = 10
+        vol = np.ones(nobs)
+        argmodel = ARG(vol=vol, param=param,
+                       maturity=maturity, riskfree=riskfree)
+        alim, blim = argmodel.cos_restriction()
+
+        self.assertEqual(alim.size, nobs)
+        self.assertEqual(blim.size, nobs)
+
 
     def test_abc_derivatives(self):
         """Test derivatives of functions a, b, c of ARG model."""
@@ -469,6 +476,7 @@ class ARGTestCase(ut.TestCase):
         """Test option pricing for the model."""
         price, strike = 100, 90
         riskfree, maturity = 0, 30/365
+        moneyness = np.log(strike/price) - riskfree * maturity
         vol = .2**2/365
 
         rho = .55
@@ -483,24 +491,18 @@ class ARGTestCase(ut.TestCase):
                           phi=phi, price_ret=price_ret, price_vol=price_vol)
         argmodel = ARG(param=param)
 
-        premium = argmodel.option_premium(vol=vol, price=price, strike=strike,
+        premium = argmodel.option_premium(vol=vol, moneyness=moneyness,
                                           maturity=maturity, riskfree=riskfree,
                                           call=True)
         self.assertEqual(premium.shape, (1,))
 
         strike = np.exp(np.linspace(-.1, .1, 10))
+        moneyness = np.log(strike/price) - riskfree * maturity
 
-        premium = argmodel.option_premium(vol=vol, price=price, strike=strike,
+        premium = argmodel.option_premium(vol=vol, moneyness=moneyness,
                                           maturity=maturity, riskfree=riskfree,
                                           call=True)
         self.assertEqual(premium.shape, strike.shape)
-
-        maturity = [1, 2]
-        fun = lambda: argmodel.option_premium(vol=vol, price=price,
-                                              strike=strike, maturity=maturity,
-                                              riskfree=riskfree, call=True)
-
-        self.assertRaises(ValueError, fun)
 
 
 if __name__ == '__main__':
