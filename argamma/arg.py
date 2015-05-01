@@ -1441,15 +1441,15 @@ class ARG(object):
 
         Parameters
         ----------
-        riskfree : float
+        riskfree : array_like
             Risk-free rate of returns, annualized
-        maturity : float
+        maturity : array_like
             Maturity, fraction of the year, i.e. 30/365
 
         Returns
         -------
-        alim : float
-        blim : float
+        alim : array_like
+        blim : array_like
 
         Notes
         -----
