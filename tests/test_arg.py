@@ -183,32 +183,31 @@ class ARGTestCase(ut.TestCase):
         """Test functions psin, upsn of ARG model."""
         param = ARGparams()
         argmodel = ARG()
-        varg = 1.
+        varg = np.atleast_2d(1.)
         periods = 10
 
-        self.assertIsInstance(argmodel.psin_q(varg, periods, param), float)
-        self.assertIsInstance(argmodel.upsn_q(varg, periods, param), float)
+        psi, ups = argmodel.ch_fun_elements(varg, periods, param)
+        self.assertEqual(psi.shape, (1, 1))
+        self.assertEqual(ups.shape, (1, 1))
 
-        varg = np.arange(5)
-        periods = 10
+        varg = np.arange(5)[:, np.newaxis]
 
-        self.assertEqual(argmodel.psin_q(varg, periods, param).shape,
-                         varg.shape)
-        self.assertEqual(argmodel.upsn_q(varg, periods, param).shape,
-                         varg.shape)
+        psi, ups = argmodel.ch_fun_elements(varg, periods, param)
+        self.assertEqual(psi.shape, varg.shape)
+        self.assertEqual(ups.shape, varg.shape)
 
     def test_char_fun_ret_q(self):
         """Test risk-neutral return charcteristic function."""
         param = ARGparams()
         nobs = 5
         vol = np.arange(nobs)
-        maturity = .1
+        maturity = np.ones(nobs) * 5/365
         riskfree = 0.
         argmodel = ARG(maturity=maturity, riskfree=riskfree)
         argmodel.load_data(vol=vol)
-        varg = 1.
+        varg = np.atleast_2d(1.)
 
-        self.assertEqual(argmodel.char_fun_ret_q(varg, param).size, nobs)
+        self.assertEqual(argmodel.char_fun_ret_q(varg, param).shape, (1, nobs))
 
         narg = 10
         varg = np.ones((narg, 1))
@@ -217,39 +216,41 @@ class ARGTestCase(ut.TestCase):
 
         param = ARGparams()
         vol = 1.
-        argmodel = ARG(maturity=.1, riskfree=0.)
+        argmodel = ARG(maturity=5/365, riskfree=0.)
         argmodel.load_data(vol=vol)
-        varg = 1.
+        varg = np.atleast_2d(1.)
 
         cfun = argmodel.char_fun_ret_q(varg, param)
 
-        self.assertIsInstance(cfun, complex)
+        self.assertIsInstance(cfun[0, 0], complex)
 
     def test_charfun(self):
         """Test risk-neutral return charcteristic function."""
         param = ARGparams()
         vol = 1.
-        maturity = 30/365
+        maturity = 5/365
         riskfree = 0.
         argmodel = ARG(param=param, maturity=maturity, riskfree=riskfree)
         argmodel.load_data(vol=vol)
         narg = 5
-        varg = np.arange(narg)
+        varg = np.arange(narg)[:, np.newaxis]
         cfun = argmodel.charfun(varg)
 
         self.assertIsInstance(cfun, np.ndarray)
         self.assertEqual(argmodel.charfun(varg).size, narg)
 
         nobs = 10
-        vol = np.ones((nobs, 1))
+        vol = np.ones(nobs)
+        maturity = maturity * np.ones(nobs)
+        argmodel = ARG(param=param, maturity=maturity, riskfree=riskfree)
         argmodel.load_data(vol=vol)
-        self.assertEqual(argmodel.charfun(varg).shape, (nobs, narg))
+        self.assertEqual(argmodel.charfun(varg).shape, (narg, nobs))
 
     def test_cos_restriction(self):
         """Test cos_restriction method."""
         param = ARGparams()
         vol = 1.
-        maturity = 30/365
+        maturity = 5/365
         riskfree = 0.
         argmodel = ARG(param=param, maturity=maturity, riskfree=riskfree)
         argmodel.load_data(vol=vol)
@@ -485,7 +486,7 @@ class ARGTestCase(ut.TestCase):
     def test_option_premium(self):
         """Test option pricing for the model."""
         price, strike = 100, 90
-        riskfree, maturity = 0, 30/365
+        riskfree, maturity = 0, 5/365
         moneyness = np.log(strike/price) - riskfree * maturity
         vol = .2**2/365
 
@@ -506,8 +507,10 @@ class ARGTestCase(ut.TestCase):
                                           call=True)
         self.assertEqual(premium.shape, (1,))
 
-        strike = np.exp(np.linspace(-.1, .1, 10))
+        nobs = 10
+        strike = np.exp(np.linspace(-.1, .1, nobs))
         moneyness = np.log(strike/price) - riskfree * maturity
+        maturity = 5/365 * np.ones(10)
 
         premium = argmodel.option_premium(vol=vol, moneyness=moneyness,
                                           maturity=maturity, riskfree=riskfree,

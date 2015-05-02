@@ -38,6 +38,7 @@ import seaborn as sns
 import scipy.stats as scs
 from scipy.optimize import minimize
 import numdifftools as nd
+import numba as nb
 
 from statsmodels.tsa.tsatools import lagmat
 
@@ -532,56 +533,34 @@ class ARG(object):
                          varg + param.price_ret, param) \
             - self.gfun(param.price_vol, param.price_ret, param)
 
-    def psin_q(self, varg, periods, param):
-        """Function psi(v, n) in risk-neutral characteristic function
-        of returns for n periods.
+    def ch_fun_elements(self, varg, periods, param):
+        """Functions psi(v, n) and ups(v, n) in risk-neutral
+        characteristic function of returns for n periods.
 
         Parameters
         ----------
-        varg : (nv, ) array
+        varg : array
             Grid for returns
-        periods : int
+        periods : array
             Numbers of periods
         param : ARGparams instance
             Model parameters
 
         Returns
         -------
-        array
-            Same dimension as uarg
+        array, array
 
         """
-        if periods == 1:
-            return self.lfun_q(0., varg, param)
-        else:
-            return self.lfun_q(self.psin_q(varg, periods-1, param),
-                               varg, param)
-
-    def upsn_q(self, varg, periods, param):
-        """Function ups(v, n) in risk-neutral characteristic function
-        of returns for n periods.
-
-        Parameters
-        ----------
-        varg : (nv, ) array
-            Grid for returns
-        periods : int
-            Numbers of periods
-        param : ARGparams instance
-            Model parameters
-
-        Returns
-        -------
-        array
-            Same dimension as uarg
-
-        """
-        if periods == 1:
-            return self.gfun_q(0., varg, param)
-        else:
-            return self.gfun_q(self.psin_q(varg, periods-1, param),
-                               varg, param) \
-                               + self.upsn_q(varg, periods-1, param)
+        periods = np.atleast_1d(periods).copy()
+        psi = self.lfun_q(0., varg, param) * np.ones_like(periods)
+        ups = self.gfun_q(0., varg, param) * np.ones_like(periods)
+        while True:
+            if np.array_equal(periods, np.ones_like(periods)):
+                return psi, ups
+            cond = periods > 1
+            periods[cond] -= 1
+            ups[:, cond] += self.gfun_q(psi, varg, param)[:, cond]
+            psi[:, cond] = self.lfun_q(psi, varg, param)[:, cond]
 
     def char_fun_ret_q(self, varg, param):
         r"""Conditional risk-neutral Characteristic function (return).
@@ -616,9 +595,10 @@ class ARG(object):
         if np.iscomplex(varg).any():
             raise ValueError('Argument must be real!')
 
-        periods = int(self.maturity * 365)
-        return np.exp(- self.vol * self.psin_q(-1j * varg, periods, param)
-            - self.upsn_q(-1j * varg, periods, param)
+        periods = np.atleast_1d(self.maturity * 365).astype(int)
+        psi, ups = self.ch_fun_elements(-1j * varg, periods, param)
+#        periods = int(self.maturity * 365)
+        return np.exp(- self.vol * psi - ups
             - 1j * varg * self.riskfree * self.maturity)
 
     def char_fun_vol(self, uarg, param):
@@ -1184,7 +1164,7 @@ class ARG(object):
         instr = np.hstack([np.exp(-1j * vollag), np.ones((nobs, 1))])
         # Must be (nobs, nmoms) array
         moment = error[:, np.newaxis, :] * instr[:, :, np.newaxis]
-        moment = moment.reshape((nobs, nmoms/2))
+        moment = moment.reshape((nobs, nmoms//2))
         # (nobs, 2 * ninstr)
         moment = np.hstack([np.real(moment), np.imag(moment)])
 
@@ -1196,7 +1176,7 @@ class ARG(object):
             derror = - self.char_fun_vol(uarg, param)[zlag-1:] * dexparg
 
             derrorinstr = derror[:, np.newaxis, :] * instr[:, :, np.newaxis]
-            derrorinstr = derrorinstr.reshape((nobs, nmoms/2))
+            derrorinstr = derrorinstr.reshape((nobs, nmoms//2))
             derrorinstr = np.hstack([np.real(derrorinstr),
                                      np.imag(derrorinstr)])
             dmoment[:, i] = derrorinstr.mean(0)
@@ -1254,7 +1234,7 @@ class ARG(object):
         instr = np.hstack([np.exp(-1j * vollag), np.ones((nobs, 1))])
         # Must be (nobs, nmoms) array
         moment = error[:, np.newaxis, :] * instr[:, :, np.newaxis]
-        moment = moment.reshape((nobs, nmoms/2))
+        moment = moment.reshape((nobs, nmoms//2))
         # (nobs, 2 * ninstr)
         moment = np.hstack([np.real(moment), np.imag(moment)])
 
@@ -1497,7 +1477,7 @@ class ARG(object):
             Current volatility
         moneyness : array_like
             Log-forward moneyness, np.log(strike/price) - riskfree * maturity
-        maturity : array_like
+        maturity : float
             Fraction of a year
         riskfree : array_like
             Risk-free rate, annualized
@@ -1510,6 +1490,8 @@ class ARG(object):
             Model implied option premium via COS method
 
         """
+#        if not isinstance(maturity, float):
+#            raise ValueError('Maturity must be float!')
         self.maturity = maturity
         self.riskfree = riskfree
         self.vol = vol
