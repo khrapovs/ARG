@@ -38,7 +38,6 @@ import seaborn as sns
 import scipy.stats as scs
 from scipy.optimize import minimize
 import numdifftools as nd
-import numba as nb
 
 from statsmodels.tsa.tsatools import lagmat
 
