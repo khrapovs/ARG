@@ -32,6 +32,7 @@ References
 from __future__ import print_function, division
 
 import numpy as np
+import numexpr as ne
 import sympy as sp
 import matplotlib.pylab as plt
 import seaborn as sns
@@ -189,7 +190,10 @@ class ARG(object):
             Same dimension as uarg
 
         """
-        return param.rho * uarg / (1 + param.scale * uarg)
+#        return param.rho * uarg / (1 + param.scale * uarg)
+        rho = param.rho
+        scale = param.scale
+        return ne.evaluate("rho * uarg / (1 + scale * uarg)")
 
     def bfun(self, uarg, param):
         r"""Function b().
@@ -210,7 +214,10 @@ class ARG(object):
             Same dimension as uarg
 
         """
-        return param.delta * np.log(1 + param.scale * uarg)
+#        return param.delta * np.log(1 + param.scale * uarg)
+        scale = param.scale
+        delta = param.delta
+        return ne.evaluate("delta * log(1 + scale * uarg)")
 
     def afun_q(self, uarg, param):
         r"""Risk-neutral function a().
