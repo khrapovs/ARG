@@ -594,11 +594,11 @@ class ARG(object):
         if np.iscomplex(varg).any():
             raise ValueError('Argument must be real!')
 
+#        periods = int(self.maturity * 365)
         periods = np.atleast_1d(self.maturity * 365).astype(int)
         psi, ups = self.ch_fun_elements(-1j * varg, periods, param)
-#        periods = int(self.maturity * 365)
-        return np.exp(- self.vol * psi - ups
-            - 1j * varg * self.riskfree * self.maturity)
+        discount = np.exp(- 1j * varg * self.riskfree * self.maturity)
+        return np.exp(- self.vol * psi - ups)
 
     def char_fun_vol(self, uarg, param):
         """Conditional Characteristic function (volatility).
@@ -1489,8 +1489,6 @@ class ARG(object):
             Model implied option premium via COS method
 
         """
-#        if not isinstance(maturity, float):
-#            raise ValueError('Maturity must be float!')
         self.maturity = maturity
         self.riskfree = riskfree
         self.vol = vol

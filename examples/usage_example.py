@@ -10,7 +10,7 @@ import matplotlib.pylab as plt
 import seaborn as sns
 
 from argamma import ARG, ARGparams
-from argamma.impvol import imp_vol, lfmoneyness
+from argamma.impvol import imp_vol, lfmoneyness, impvol_bisection
 
 __author__ = "Stanislav Khrapov"
 __email__ = "khrapovs@gmail.com"
@@ -315,7 +315,6 @@ def plot_smiles(fname=None):
 
     points = 5
 
-    sns.set_context('paper')
     sns.set_palette(sns.color_palette("binary_r", desat=.5))
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(7, 3))
     loc = 'upper center'
@@ -333,7 +332,7 @@ def plot_smiles(fname=None):
                                           maturity=maturity,
                                           riskfree=riskfree, call=call)
 
-        vol = imp_vol(moneyness, maturity, premium/price, call)
+        vol = impvol_bisection(moneyness, maturity, premium/price, call)
         axes[0].plot(moneyness*100, vol*100, label=str(phi))
 
     axes[0].legend(title='Leverage, $\phi$', loc=loc)
@@ -354,7 +353,7 @@ def plot_smiles(fname=None):
                                           maturity=matur,
                                           riskfree=riskfree, call=call)
 
-        vol = imp_vol(moneyness, matur, premium/price, call)
+        vol = impvol_bisection(moneyness, matur, premium/price, call)
         axes[1].plot(moneyness*100, vol*100, label=str(int(matur*365)))
 
     axes[1].legend(title='Maturity, $T$', loc=loc)
@@ -366,9 +365,48 @@ def plot_smiles(fname=None):
     plt.show()
 
 
+def plot_outofthemoney(fname=None):
+    """Plot model-implied out-of-the-money premium.
+
+    """
+    nobs = 200
+    moneyness = np.linspace(-.2, .2, nobs)
+    riskfree, maturity = .1, 30/365
+    call = np.ones_like(moneyness).astype(bool)
+    call[moneyness < 0] = False
+    current_vol = .2**2/365
+
+    rho = .9
+    delta = 1.1
+    scale = current_vol * (1 - rho) / delta
+    phi = -.5
+    price_vol = -10
+    price_ret = .6
+
+    param = ARGparams(scale=scale, rho=rho, delta=delta,
+                      phi=phi, price_ret=price_ret, price_vol=price_vol)
+    argmodel = ARG(param=param)
+
+
+    premium = argmodel.option_premium(vol=current_vol, moneyness=moneyness,
+                                      maturity=maturity,
+                                      riskfree=riskfree, call=call)
+    vol = impvol_bisection(moneyness, maturity, premium, call)
+
+    fig, axes = plt.subplots(nrows=2, ncols=1)
+    axes[0].plot(moneyness, premium, label='premium')
+    axes[1].plot(moneyness, vol, label='impvol')
+    axes[0].legend()
+    axes[1].legend()
+    plt.show()
+
+
+
+
 if __name__ == '__main__':
 
     np.set_printoptions(precision=4, suppress=True)
+    sns.set_context('notebook')
 
 #    play_with_arg()
 
@@ -388,4 +426,6 @@ if __name__ == '__main__':
 
 #    plot_cf()
 
-    plot_smiles()
+#    plot_smiles()
+
+    plot_outofthemoney()
