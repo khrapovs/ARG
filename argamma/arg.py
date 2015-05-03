@@ -532,7 +532,7 @@ class ARG(object):
                          varg + param.price_ret, param) \
             - self.gfun(param.price_vol, param.price_ret, param)
 
-    def ch_fun_elements(self, varg, periods, param):
+    def ch_fun_elements(self, varg, param):
         """Functions psi(v, n) and ups(v, n) in risk-neutral
         characteristic function of returns for n periods.
 
@@ -540,21 +540,22 @@ class ARG(object):
         ----------
         varg : array
             Grid for returns
-        periods : array
-            Numbers of periods
         param : ARGparams instance
             Model parameters
 
         Returns
         -------
-        array, array
+        psi : array
+        ups : array
 
         """
-        periods = np.atleast_1d(periods).copy()
-        psi = self.lfun_q(0., varg, param) * np.ones_like(periods)
-        ups = self.gfun_q(0., varg, param) * np.ones_like(periods)
+        #        periods = int(self.maturity * 365)
+        periods = np.atleast_1d(self.maturity * 365).astype(int)
+        ones = np.ones_like(periods)
+        psi = self.lfun_q(0., varg, param) * ones
+        ups = self.gfun_q(0., varg, param) * ones
         while True:
-            if np.array_equal(periods, np.ones_like(periods)):
+            if np.array_equal(periods, ones):
                 return psi, ups
             cond = periods > 1
             periods[cond] -= 1
@@ -594,10 +595,8 @@ class ARG(object):
         if np.iscomplex(varg).any():
             raise ValueError('Argument must be real!')
 
-#        periods = int(self.maturity * 365)
-        periods = np.atleast_1d(self.maturity * 365).astype(int)
-        psi, ups = self.ch_fun_elements(-1j * varg, periods, param)
-        discount = np.exp(- 1j * varg * self.riskfree * self.maturity)
+        psi, ups = self.ch_fun_elements(-1j * varg, param)
+#        discount = np.exp(- 1j * varg * self.riskfree * self.maturity)
         return np.exp(- self.vol * psi - ups)
 
     def char_fun_vol(self, uarg, param):

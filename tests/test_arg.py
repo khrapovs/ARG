@@ -182,17 +182,17 @@ class ARGTestCase(ut.TestCase):
     def test_joint_multiperiod_functions(self):
         """Test functions psin, upsn of ARG model."""
         param = ARGparams()
-        argmodel = ARG()
         varg = np.atleast_2d(1.)
-        periods = 10
+        maturity = 5/365
+        argmodel = ARG(maturity=maturity)
 
-        psi, ups = argmodel.ch_fun_elements(varg, periods, param)
+        psi, ups = argmodel.ch_fun_elements(varg, param)
         self.assertEqual(psi.shape, (1, 1))
         self.assertEqual(ups.shape, (1, 1))
 
         varg = np.arange(5)[:, np.newaxis]
 
-        psi, ups = argmodel.ch_fun_elements(varg, periods, param)
+        psi, ups = argmodel.ch_fun_elements(varg, param)
         self.assertEqual(psi.shape, varg.shape)
         self.assertEqual(ups.shape, varg.shape)
 
