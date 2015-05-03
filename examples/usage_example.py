@@ -300,10 +300,11 @@ def plot_smiles(fname=None):
 
     """
     price = 1
-    moneyness = np.linspace(-.1, .1, 50)
-    strike = np.exp(moneyness) * price
-    riskfree, maturity = 0, 30/365
-    call = True
+    nobs = 100
+    moneyness = np.linspace(-.2, .2, nobs)
+    riskfree, maturity = .0, 30/365
+    call = np.ones_like(moneyness).astype(bool)
+    call[moneyness < 0] = False
     current_vol = .2**2/365
 
     rho = .9
@@ -326,8 +327,6 @@ def plot_smiles(fname=None):
                           phi=phi, price_ret=price_ret, price_vol=price_vol)
         argmodel = ARG(param=param)
 
-        moneyness = lfmoneyness(price, strike, riskfree, maturity)
-
         premium = argmodel.option_premium(vol=current_vol, moneyness=moneyness,
                                           maturity=maturity,
                                           riskfree=riskfree, call=call)
@@ -347,8 +346,6 @@ def plot_smiles(fname=None):
                           phi=phi, price_ret=price_ret, price_vol=price_vol)
         argmodel = ARG(param=param)
 
-        moneyness = lfmoneyness(price, strike, riskfree, matur)
-
         premium = argmodel.option_premium(vol=current_vol, moneyness=moneyness,
                                           maturity=matur,
                                           riskfree=riskfree, call=call)
@@ -365,7 +362,7 @@ def plot_smiles(fname=None):
     plt.show()
 
 
-def plot_outofthemoney(fname=None):
+def plot_outofthemoney():
     """Plot model-implied out-of-the-money premium.
 
     """
@@ -426,6 +423,6 @@ if __name__ == '__main__':
 
 #    plot_cf()
 
-#    plot_smiles()
+    plot_smiles()
 
-    plot_outofthemoney()
+#    plot_outofthemoney()
