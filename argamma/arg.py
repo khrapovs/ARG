@@ -446,91 +446,54 @@ class ARG(object):
         """
         return uarg * self.bfun_q(- self.center(param), param)
 
-    def lfun(self, uarg, varg, param):
-        """Function l(u, v) in joint characteristic function.
-
-        Parameters
-        ----------
-        uarg : float
-            Grid for volatility
-        varg : (nv, ) array
-            Grid for returns
-        param : ARGparams instance
-            Model parameters
-
-        Returns
-        -------
-        array
-            Same dimension as uarg
-
-        """
-        return self.afun(uarg + self.alpha(varg, param), param) \
-            + self.beta(varg, param)
-
-    def gfun(self, uarg, varg, param):
-        """Function g(u, v) in joint characteristic function.
+    def lgfun(self, uarg, varg, param):
+        """Function l(u, v) and g(u, v) in joint characteristic function.
 
         Parameters
         ----------
         uarg : array
             Grid for volatility
-        varg : (nv, ) array
+        varg : array
             Grid for returns
         param : ARGparams instance
             Model parameters
 
         Returns
         -------
-        array
-            Same dimension as uarg
+        lfun : array
+        gfun : array
 
         """
-        return self.bfun(uarg + self.alpha(varg, param), param) \
-            + self.gamma(varg, param)
+        alpha = self.alpha(varg, param)
+        lfun = self.afun(uarg + alpha, param) + self.beta(varg, param)
+        gfun = self.bfun(uarg + alpha, param) + self.gamma(varg, param)
+        return lfun, gfun
 
-    def lfun_q(self, uarg, varg, param):
-        """Function l(u, v) in joint risk-neutral characteristic function.
+    def lgfun_q(self, uarg, varg, param):
+        """Function l(u, v) and g(u, v) in joint risk-neutral
+        characteristic function.
 
         Parameters
         ----------
-        uarg : float
+        uarg : array
             Grid for volatility
-        varg : (nv, ) array
+        varg : array
             Grid for returns
         param : ARGparams instance
             Model parameters
 
         Returns
         -------
-        array
-            Same dimension as uarg
+        lfun : array
+        gfun : array
 
         """
-        return self.lfun(uarg + param.price_vol,
-                         varg + param.price_ret, param) \
-            - self.lfun(param.price_vol, param.price_ret, param)
-
-    def gfun_q(self, uarg, varg, param):
-        """Function g(u, v) in joint risk-neutral characteristic function.
-
-        Parameters
-        ----------
-        uarg : float
-            Grid for volatility
-        varg : (nv, ) array
-            Grid for returns
-        param : ARGparams instance
-            Model parameters
-
-        Returns
-        -------
-        array
-            Same dimension as uarg
-
-        """
-        return self.gfun(uarg + param.price_vol,
-                         varg + param.price_ret, param) \
-            - self.gfun(param.price_vol, param.price_ret, param)
+        lfun1, gfun1 = self.lgfun(uarg + param.price_vol,
+                                  varg + param.price_ret, param)
+        lfun2, gfun2 = self.lgfun(param.price_vol, param.price_ret, param)
+        lfun = lfun1 - lfun2
+        gfun = gfun1 - gfun2
+        return lfun, gfun
 
     def ch_fun_elements(self, varg, param):
         """Functions psi(v, n) and ups(v, n) in risk-neutral
@@ -552,15 +515,16 @@ class ARG(object):
         #        periods = int(self.maturity * 365)
         periods = np.atleast_1d(self.maturity * 365).astype(int)
         ones = np.ones_like(periods)
-        psi = self.lfun_q(0., varg, param) * ones
-        ups = self.gfun_q(0., varg, param) * ones
+        lfun, gfun = self.lgfun_q(0., varg, param)
+        varg, psi, ups = varg * ones, lfun * ones, gfun * ones
         while True:
             if np.array_equal(periods, ones):
                 return psi, ups
             cond = periods > 1
             periods[cond] -= 1
-            ups[:, cond] += self.gfun_q(psi, varg, param)[:, cond]
-            psi[:, cond] = self.lfun_q(psi, varg, param)[:, cond]
+            lfun, gfun = self.lgfun_q(psi[:, cond], varg[:, cond], param)
+            ups[:, cond] += gfun
+            psi[:, cond] = lfun
 
     def char_fun_ret_q(self, varg, param):
         r"""Conditional risk-neutral Characteristic function (return).

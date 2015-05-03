@@ -167,17 +167,22 @@ class ARGTestCase(ut.TestCase):
         argmodel = ARG()
         uarg, varg = 1., 2.
 
-        self.assertIsInstance(argmodel.lfun(uarg, varg, param), float)
-        self.assertIsInstance(argmodel.gfun(uarg, varg, param), float)
-        self.assertIsInstance(argmodel.lfun_q(uarg, varg, param), float)
-        self.assertIsInstance(argmodel.gfun_q(uarg, varg, param), float)
+        lfun, gfun = argmodel.lgfun(uarg, varg, param)
+        lfunq, gfunq = argmodel.lgfun_q(uarg, varg, param)
+
+        self.assertIsInstance(lfun, float)
+        self.assertIsInstance(gfun, float)
+        self.assertIsInstance(lfunq, float)
+        self.assertIsInstance(gfunq, float)
 
         uarg, varg = 1., np.arange(5)
+        lfun, gfun = argmodel.lgfun(uarg, varg, param)
+        lfunq, gfunq = argmodel.lgfun_q(uarg, varg, param)
 
-        self.assertEqual(argmodel.lfun(uarg, varg, param).shape, varg.shape)
-        self.assertEqual(argmodel.gfun(uarg, varg, param).shape, varg.shape)
-        self.assertEqual(argmodel.lfun_q(uarg, varg, param).shape, varg.shape)
-        self.assertEqual(argmodel.gfun_q(uarg, varg, param).shape, varg.shape)
+        self.assertEqual(lfun.shape, varg.shape)
+        self.assertEqual(gfun.shape, varg.shape)
+        self.assertEqual(lfunq.shape, varg.shape)
+        self.assertEqual(gfunq.shape, varg.shape)
 
     def test_joint_multiperiod_functions(self):
         """Test functions psin, upsn of ARG model."""
