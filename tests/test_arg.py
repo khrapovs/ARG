@@ -494,6 +494,7 @@ class ARGTestCase(ut.TestCase):
         riskfree, maturity = 0, 5/365
         moneyness = np.log(strike/price) - riskfree * maturity
         vol = .2**2/365
+        call = True
 
         rho = .55
         delta = .75
@@ -509,7 +510,7 @@ class ARGTestCase(ut.TestCase):
 
         premium = argmodel.option_premium(vol=vol, moneyness=moneyness,
                                           maturity=maturity, riskfree=riskfree,
-                                          call=True)
+                                          call=call)
         self.assertEqual(premium.shape, (1,))
 
         nobs = 10
@@ -519,7 +520,12 @@ class ARGTestCase(ut.TestCase):
 
         premium = argmodel.option_premium(vol=vol, moneyness=moneyness,
                                           maturity=maturity, riskfree=riskfree,
-                                          call=True)
+                                          call=call)
+        self.assertEqual(premium.shape, strike.shape)
+
+        data = {'vol': vol, 'moneyness': moneyness, 'maturity': maturity,
+                'riskfree': riskfree, 'call': call}
+        premium = argmodel.option_premium(data=data)
         self.assertEqual(premium.shape, strike.shape)
 
 

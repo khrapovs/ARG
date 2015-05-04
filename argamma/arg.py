@@ -732,6 +732,8 @@ class ARG(object):
     def vsim2(self, nsim=1, nobs=int(1e2), param=None):
         """Simulate ARG(1) process for volatility.
 
+        Uses non-central Chi-square distribution to simulate in one step.
+
         Parameters
         ----------
         nsim : int
@@ -1437,7 +1439,7 @@ class ARG(object):
         return self.char_fun_ret_q(varg, self.param)
 
     def option_premium(self, vol=None, moneyness=None, maturity=None,
-                       riskfree=None, call=True):
+                       riskfree=None, call=None, data=None):
         """Model implied option premium via COS method.
 
         Parameters
@@ -1452,6 +1454,9 @@ class ARG(object):
             Risk-free rate, annualized
         call : bool array_like
             Call/Put flag
+        data : pandas DataFrame, record array, or dictionary of arrays
+            Structured data. Mandatory labels:
+            vol, moneyness, maturity, riskfree, call
 
         Returns
         -------
@@ -1459,6 +1464,17 @@ class ARG(object):
             Model implied option premium via COS method
 
         """
+        if data is not None:
+            try:
+                data = data.to_records()
+            except:
+                pass
+            maturity = data['maturity']
+            riskfree = data['riskfree']
+            vol = data['vol']
+            moneyness = data['moneyness']
+            call = data['call']
+
         self.maturity = maturity
         self.riskfree = riskfree
         self.vol = vol
