@@ -40,12 +40,11 @@ def try_simulation():
 
     rho = .9
     delta = .75
-    dailymean = .2**2 / 365
-    scale = dailymean * (1 - rho) / delta
+    mean = .2**2 / 365
     price_vol, price_ret = -16, .95
     phi = -.9
 
-    param = ARGparams(scale=scale, rho=rho, delta=delta,
+    param = ARGparams(mean=mean, rho=rho, delta=delta,
                       phi=phi, price_ret=price_ret)
     nobs = 500
     argmodel = ARG()
@@ -82,12 +81,11 @@ def estimate_mle_ret():
     """Try MLE estimator with return."""
     rho = .9
     delta = 1.1
-    dailymean = .2**2
-    scale = dailymean * (1 - rho) / delta
+    mean = .2**2
     price_vol, price_ret = -16, .95
     phi = -.5
 
-    param_true = ARGparams(scale=scale, rho=rho, delta=delta,
+    param_true = ARGparams(mean=mean, rho=rho, delta=delta,
                            phi=phi, price_ret=price_ret)
     argmodel = ARG()
     nsim, nobs = 1, 500
@@ -106,7 +104,8 @@ def estimate_mle_ret():
     print(results_vol)
     print(results_ret)
     print(pfinal_vol.get_theta_vol())
-    print(pfinal_ret.get_theta_ret())
+    print('True parameter: ', param_true.get_theta_ret())
+    print('Final parameter: ', pfinal_ret.get_theta_ret())
 
     return pfinal_vol, pfinal_ret, results_vol, results_ret
 
@@ -115,12 +114,11 @@ def estimate_mle_joint():
     """Try MLE estimator with volatility and return."""
     rho = .9
     delta = 1.1
-    dailymean = .2**2
-    scale = dailymean * (1 - rho) / delta
+    mean = .2**2
     price_ret = .95
     phi = -.5
 
-    param_true = ARGparams(scale=scale, rho=rho, delta=delta,
+    param_true = ARGparams(mean=mean, rho=rho, delta=delta,
                            phi=phi, price_ret=price_ret)
     argmodel = ARG()
     nsim, nobs = 1, 500
@@ -167,7 +165,7 @@ def estimate_gmm_vol():
 
     print('True parameter:', param_true)
     print('Final parameter: ', param_final)
-    print('Std: ', results.tstat)
+    print('Tstat: ', results.tstat)
     results.print_results()
 
     plt.plot(vol, label='Data')
@@ -183,12 +181,11 @@ def estimate_gmm_ret():
 
     rho = .9
     delta = 1.1
-    dailymean = .01**2
-    scale = dailymean * (1 - rho) / delta
+    mean = .01**2
     price_ret = .95
     phi = -.5
 
-    param_true = ARGparams(scale=scale, rho=rho, delta=delta,
+    param_true = ARGparams(mean=mean, rho=rho, delta=delta,
                            phi=phi, price_ret=price_ret)
     argmodel = ARG()
     nsim, nobs = 1, 500
@@ -203,7 +200,7 @@ def estimate_gmm_ret():
 
     print('True parameter:', param_true.get_theta_ret())
     print('Final parameter: ', param_final.get_theta_ret())
-    print('Std: ', results.tstat)
+    print('Tstat: ', results.tstat)
     results.print_results()
 
     fig, axes = plt.subplots(nrows=2, ncols=1)
@@ -223,12 +220,11 @@ def estimate_gmm_joint():
 
     rho = .9
     delta = 1.1
-    dailymean = .01**2
-    scale = dailymean * (1 - rho) / delta
+    mean = .01**2
     price_ret = .95
     phi = -.5
 
-    param_true = ARGparams(scale=scale, rho=rho, delta=delta,
+    param_true = ARGparams(mean=mean, rho=rho, delta=delta,
                            phi=phi, price_ret=price_ret)
     argmodel = ARG()
     nsim, nobs = 1, 500
@@ -239,10 +235,9 @@ def estimate_gmm_joint():
 
     rho = .5
     delta = 1.5
-    scale = dailymean * (1 - rho) / delta
     phi = -.1
 
-    param_start = ARGparams(scale=scale, rho=rho, delta=delta,
+    param_start = ARGparams(mean=mean, rho=rho, delta=delta,
                             phi=phi, price_ret=price_ret)
 
     uarg = np.linspace(.1, 10, 3) * 1j/10
@@ -251,7 +246,7 @@ def estimate_gmm_joint():
 
     print('True parameter:', param_true.get_theta())
     print('Final parameter: ', param_final.get_theta())
-    print('Std: ', results.tstat)
+    print('Tstat: ', results.tstat)
     results.print_results()
 
     fig, axes = plt.subplots(nrows=2, ncols=1)
@@ -272,12 +267,11 @@ def plot_cf():
     """
     rho = .9
     delta = 1.1
-    dailymean = .01**2
-    scale = dailymean * (1 - rho) / delta
+    mean = .01**2
     price_ret = .95
     phi = -.5
 
-    param_true = ARGparams(scale=scale, rho=rho, delta=delta,
+    param_true = ARGparams(mean=mean, rho=rho, delta=delta,
                            phi=phi, price_ret=price_ret)
     argmodel = ARG()
     nsim, nobs = 1, 500
@@ -286,7 +280,7 @@ def plot_cf():
     ret = argmodel.rsim(param=param_true)
     argmodel.load_data(ret=ret)
 
-    uarg = np.linspace(1, 10000, 2) * 1j
+    uarg = np.linspace(.1, 100, 2) * 1j
 
     fix, axes = plt.subplots(nrows=3, ncols=1)
     axes[0].plot(vol)
@@ -301,7 +295,7 @@ def plot_smiles(fname=None):
     """
     price = 1
     nobs = 100
-    moneyness = np.linspace(-.2, .2, nobs)
+    moneyness = np.linspace(-.1, .1, nobs)
     riskfree, maturity = .0, 30/365
     call = np.ones_like(moneyness).astype(bool)
     call[moneyness < 0] = False
@@ -309,7 +303,6 @@ def plot_smiles(fname=None):
 
     rho = .9
     delta = 1.1
-    scale = current_vol * (1 - rho) / delta
     phi = -.5
     price_vol = -.1
     price_ret = .5
@@ -323,7 +316,7 @@ def plot_smiles(fname=None):
     phis = np.linspace(0, -.5, points)
 
     for phi in phis:
-        param = ARGparams(scale=scale, rho=rho, delta=delta,
+        param = ARGparams(mean=current_vol, rho=rho, delta=delta,
                           phi=phi, price_ret=price_ret, price_vol=price_vol)
         argmodel = ARG(param=param)
 
@@ -342,7 +335,7 @@ def plot_smiles(fname=None):
     phi = 0.
 
     for matur in maturities:
-        param = ARGparams(scale=scale, rho=rho, delta=delta,
+        param = ARGparams(mean=current_vol, rho=rho, delta=delta,
                           phi=phi, price_ret=price_ret, price_vol=price_vol)
         argmodel = ARG(param=param)
 
@@ -375,12 +368,11 @@ def plot_outofthemoney():
 
     rho = .9
     delta = 1.1
-    scale = current_vol * (1 - rho) / delta
     phi = -.5
     price_vol = -10
-    price_ret = .6
+    price_ret = .5
 
-    param = ARGparams(scale=scale, rho=rho, delta=delta,
+    param = ARGparams(mean=current_vol, rho=rho, delta=delta,
                       phi=phi, price_ret=price_ret, price_vol=price_vol)
     argmodel = ARG(param=param)
 
@@ -423,6 +415,6 @@ if __name__ == '__main__':
 
 #    plot_cf()
 
-    plot_smiles()
+#    plot_smiles()
 
-#    plot_outofthemoney()
+    plot_outofthemoney()

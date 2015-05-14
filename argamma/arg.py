@@ -142,16 +142,17 @@ class ARG(object):
             Risk-neutral parameters
 
         """
-        factor = 1/(1 + param.scale \
+        factor = 1/(1 + param.get_scale() \
             * (param.price_vol + self.alpha(param.price_ret, param)))
         if factor <= 0 or param.get_theta_vol().min() <= 0:
             raise ValueError('Invalid parameters in Q conversion!')
         delta = param.delta
-        scale = param.scale * factor
-        beta = param.beta * factor
+        scale = param.get_scale() * factor
+        beta = param.get_beta() * factor
         rho = scale * beta
+        mean = scale * delta / (1 - rho)
         param = ARGparams()
-        param.update(theta_vol=[scale, rho, delta])
+        param.update(theta_vol=[mean, rho, delta])
         return param
 
     def load_data(self, vol=None, ret=None):
@@ -192,7 +193,7 @@ class ARG(object):
         """
 #        return param.rho * uarg / (1 + param.scale * uarg)
         rho = param.rho
-        scale = param.scale
+        scale = param.get_scale()
         return ne.evaluate("rho * uarg / (1 + scale * uarg)")
 
     def bfun(self, uarg, param):
@@ -215,7 +216,7 @@ class ARG(object):
 
         """
 #        return param.delta * np.log(1 + param.scale * uarg)
-        scale = param.scale
+        scale = param.get_scale()
         delta = param.delta
         return ne.evaluate("delta * log(1 + scale * uarg)")
 
@@ -278,8 +279,8 @@ class ARG(object):
         (3, nu) array
 
         """
-        da_scale = -param.rho * uarg**2 / (param.scale*uarg + 1)**2
-        da_rho = uarg / (param.scale*uarg + 1)
+        da_scale = -param.rho * uarg**2 / (param.get_scale()*uarg + 1)**2
+        da_rho = uarg / (param.get_scale()*uarg + 1)
         da_delta = np.zeros_like(uarg)
         return np.vstack((da_scale, da_rho, da_delta))
 
@@ -306,9 +307,9 @@ class ARG(object):
         (3, nu) array
 
         """
-        db_scale = param.delta * uarg / (1 + param.scale * uarg)
+        db_scale = param.delta * uarg / (1 + param.get_scale() * uarg)
         db_rho = np.zeros_like(uarg)
-        db_delta = np.log(1 + param.scale * uarg)
+        db_delta = np.log(1 + param.get_scale() * uarg)
         return np.vstack((db_scale, db_rho, db_delta))
 
     def cfun(self, uarg, param):
@@ -330,7 +331,7 @@ class ARG(object):
             Same dimension as uarg
 
         """
-        return param.delta * np.log(1 + param.scale * uarg / (1-param.rho))
+        return param.delta * np.log(1 + param.get_scale()*uarg / (1-param.rho))
 
     def center(self, param):
         """No-arb restriction parameter.
@@ -346,7 +347,7 @@ class ARG(object):
             Same dimension as uarg
 
         """
-        return param.phi / (param.scale * (1 + param.rho))**.5
+        return param.phi / (param.get_scale() * (1 + param.rho))**.5
 
     def psi(self, param):
         """Function psi.
@@ -631,7 +632,7 @@ class ARG(object):
         float
 
         """
-        return param.scale * param.delta / (1 - param.rho)
+        return param.get_scale() * param.delta / (1 - param.rho)
 
     def uvar(self, param):
         r"""Unconditional variance of the volatility process.
@@ -723,10 +724,10 @@ class ARG(object):
 
         """
         vol = np.empty((nobs, nsim))
-        vol[0] = self.umean(param)
+        vol[0] = param.get_mean()
         for i in range(1, nobs):
-            temp = np.random.poisson(param.beta * vol[i-1])
-            vol[i] = param.scale * np.random.gamma(param.delta + temp)
+            temp = np.random.poisson(param.get_beta() * vol[i-1])
+            vol[i] = param.get_scale() * np.random.gamma(param.delta + temp)
         return vol
 
     def vsim2(self, nsim=1, nobs=int(1e2), param=None):
@@ -750,12 +751,12 @@ class ARG(object):
 
         """
         vol = np.empty((nobs, nsim))
-        vol[0] = self.umean(param)
+        vol[0] = param.get_mean()
         for i in range(1, nobs):
             df = param.delta * 2
             nc = param.rho * vol[i-1]
             vol[i] = scs.ncx2.rvs(df, nc, size=nsim)
-        return vol * param.scale / 2
+        return vol * param.get_scale() / 2
 
     def vol_cmean(self, param):
         """Conditional mean of volatility.
@@ -771,7 +772,7 @@ class ARG(object):
             Conditional mean
 
         """
-        return param.rho * self.vol[1:] + param.delta * param.scale
+        return param.rho * self.vol[1:] + param.delta * param.get_scale()
 
     def vol_cvar(self, param):
         """Conditional variance of volatility.
@@ -787,8 +788,8 @@ class ARG(object):
             Conditional variance
 
         """
-        return (2 * param.rho * self.vol[1:] + param.delta * param.scale) \
-            * param.scale
+        return (2 * param.rho * self.vol[1:]
+            + param.delta * param.get_scale()) * param.get_scale()
 
     def vol_kfun(self, param):
         """Conditional variance of volatility.
@@ -805,7 +806,7 @@ class ARG(object):
 
         """
         return self.umean(param) / ((2 * param.rho * self.umean(param)
-            + param.delta * param.scale) * param.scale)
+            + param.delta * param.get_scale()) * param.get_scale())
 
     def ret_cmean(self, param):
         """Conditional mean of return.
@@ -997,7 +998,8 @@ class ARG(object):
                            options=options)
 #        x0 = brute(likelihood, list(zip(theta_start*.9, theta_start*1.1)))
 
-        hess_mat = nd.Hessian(likelihood)(results.x)
+        with np.errstate(divide='ignore'):
+            hess_mat = nd.Hessian(likelihood)(results.x)
         results.std_theta = np.diag(np.linalg.inv(hess_mat) \
             / len(self.vol))**.5
         results.tstat = results.x / results.std_theta
@@ -1034,8 +1036,8 @@ class ARG(object):
         except ValueError:
             return 1e10
         degf = param.delta * 2
-        nonc = param.rho * self.vol[:-1] / param.scale * 2
-        scale = param.scale/2
+        nonc = param.rho * self.vol[:-1] / param.get_scale() * 2
+        scale = param.get_scale() / 2
         logf = scs.ncx2.logpdf(self.vol[1:], degf, nonc, scale=scale)
         return -logf[~np.isnan(logf)].mean()
 
@@ -1261,7 +1263,8 @@ class ARG(object):
         """
         mom = lambda theta: self.moment_ret(theta, theta_vol=theta_vol,
                                             uarg=uarg, zlag=zlag).mean(0)
-        return nd.Jacobian(mom)(theta_ret)
+        with np.errstate(divide='ignore'):
+            return nd.Jacobian(mom)(theta_ret)
 
     def moment_joint(self, theta, uarg=None, zlag=1):
         """Moment conditions (joint) for spectral GMM estimator.
@@ -1307,7 +1310,8 @@ class ARG(object):
         """
         mom = lambda theta: self.moment_joint(theta, uarg=uarg,
                                               zlag=zlag).mean(0)
-        return nd.Jacobian(mom)(theta)
+        with np.errstate(divide='ignore'):
+            return nd.Jacobian(mom)(theta)
 
     def momcond_joint(self, theta, uarg=None, zlag=1):
         """Moment conditions (joint) for spectral GMM estimator.

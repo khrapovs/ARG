@@ -25,23 +25,26 @@ class ARGTestCase(ut.TestCase):
 
         param = ARGparams()
 
-        self.assertIsInstance(param.scale, float)
+        self.assertIsInstance(param.mean, float)
         self.assertIsInstance(param.rho, float)
         self.assertIsInstance(param.delta, float)
-        self.assertIsInstance(param.beta, float)
+        self.assertIsInstance(param.get_beta(), float)
+        self.assertIsInstance(param.get_scale(), float)
 
-        scale, rho, delta = .1, 0, 0
-        theta_true = [scale, rho, delta]
-        param = ARGparams(scale=scale, rho=rho, delta=delta)
+        mean, rho, delta = .1, .9, 1.1
+        theta_true = [mean, rho, delta]
+        param = ARGparams(mean=mean, rho=rho, delta=delta)
 
         self.assertIsInstance(param.get_theta_vol(), np.ndarray)
+        self.assertIsInstance(param.get_scale(), float)
+        self.assertIsInstance(param.get_mean(), float)
         np.testing.assert_array_equal(param.get_theta_vol(), theta_true)
 
-        scale, rho, delta = .01, .5, 3
-        theta_true = [scale, rho, delta]
+        mean, rho, delta = .01, .5, 3
+        theta_true = [mean, rho, delta]
         param.update(theta_vol=theta_true)
 
-        self.assertEqual(param.scale, scale)
+        self.assertEqual(param.mean, mean)
         self.assertEqual(param.rho, rho)
         self.assertEqual(param.delta, delta)
 
@@ -71,12 +74,12 @@ class ARGTestCase(ut.TestCase):
     def test_param_class_joint(self):
         """Test parameter class for joint parameters."""
 
-        scale, rho, delta = .01**2, .9, 1.1
+        mean, rho, delta = .1**2, .9, 1.1
         phi, price_ret = -.5, 1
-        param = ARGparams(scale=scale, rho=rho, delta=delta,
+        param = ARGparams(mean=mean, rho=rho, delta=delta,
                           phi=phi, price_ret=price_ret)
 
-        theta_true = [scale, rho, delta, phi, price_ret]
+        theta_true = [mean, rho, delta, phi, price_ret]
 
         self.assertIsInstance(param.get_theta(), np.ndarray)
         np.testing.assert_array_equal(param.get_theta(), theta_true)
@@ -88,10 +91,11 @@ class ARGTestCase(ut.TestCase):
 
     def test_conversion_to_q(self):
         """Test conversion to Q measure."""
-        scale, rho, delta = 1, 2, 3
-        phi, price_vol, price_ret = -.5, -5, 5
-        param = ARGparams(scale=scale, rho=rho, delta=delta,
+        mean, rho, delta = .1**2, .9, 1.1
+        phi, price_vol, price_ret = -.5, -1, .5
+        param = ARGparams(mean=mean, rho=rho, delta=delta,
                           phi=phi, price_ret=price_ret, price_vol=price_vol)
+        scale = param.get_scale()
         argmodel = ARG()
         param_q = argmodel.convert_to_q(param)
 
@@ -100,7 +104,7 @@ class ARGTestCase(ut.TestCase):
         factor = 1/(1 + scale * (price_vol \
             + argmodel.alpha(price_ret, param)))
         scale = scale * factor
-        beta = param.beta * factor
+        beta = param.get_beta() * factor
         rho = scale * beta
 
         self.assertEqual(param_q.scale, scale)
@@ -110,8 +114,8 @@ class ARGTestCase(ut.TestCase):
     def test_uncond_moments(self):
         """Test unconditional moments of the ARG model."""
 
-        scale, rho, delta = 1, .9, 3
-        param = ARGparams(scale=scale, rho=rho, delta=delta)
+        mean, rho, delta = 1, .9, 3
+        param = ARGparams(mean=mean, rho=rho, delta=delta)
         argmodel = ARG()
 
         self.assertIsInstance(argmodel.umean(param), float)
@@ -353,7 +357,7 @@ class ARGTestCase(ut.TestCase):
     def test_likelihoods(self):
         """Test likelihood functions."""
 
-        theta_vol = np.array([1e-5, .9, 1.1])
+        theta_vol = np.array([1e-2, .9, 1.1])
         theta_ret = np.array([-.5, 1])
         theta = np.ones(5)
         vol = np.array([1, 2, 3])
@@ -498,13 +502,12 @@ class ARGTestCase(ut.TestCase):
 
         rho = .55
         delta = .75
-        dailymean = .2**2/365
-        scale = dailymean * (1 - rho) / delta
+        mean = .2**2/365
         phi = -.0
         price_vol = -16.0
         price_ret = 20.95
 
-        param = ARGparams(scale=scale, rho=rho, delta=delta,
+        param = ARGparams(mean=mean, rho=rho, delta=delta,
                           phi=phi, price_ret=price_ret, price_vol=price_vol)
         argmodel = ARG(param=param)
 
