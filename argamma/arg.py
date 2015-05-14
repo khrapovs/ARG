@@ -31,6 +31,8 @@ References
 """
 from __future__ import print_function, division
 
+import warnings
+
 import numpy as np
 import numexpr as ne
 import sympy as sp
@@ -45,11 +47,6 @@ from statsmodels.tsa.tsatools import lagmat
 from .argparams import ARGparams
 from argamma.mygmm import GMM
 from argamma.fangoosterlee import cosmethod
-
-
-__author__ = "Stanislav Khrapov"
-__email__ = "khrapovs@gmail.com"
-__status__ = "Development"
 
 __all__ = ['ARG']
 
@@ -998,8 +995,10 @@ class ARG(object):
                            options=options)
 #        x0 = brute(likelihood, list(zip(theta_start*.9, theta_start*1.1)))
 
-        with np.errstate(divide='ignore'):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
             hess_mat = nd.Hessian(likelihood)(results.x)
+
         results.std_theta = np.diag(np.linalg.inv(hess_mat) \
             / len(self.vol))**.5
         results.tstat = results.x / results.std_theta
