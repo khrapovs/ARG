@@ -784,7 +784,7 @@ class ARG(object):
         Returns
         -------
         (nobs, nsim) array
-            Conditional mean
+            Conditional variance
 
         """
         return (2 * param.rho * self.vol[1:] + param.delta * param.scale) \

@@ -136,6 +136,17 @@ class ARGparams(object):
         """
         return np.hstack((self.get_theta_vol(), self.get_theta_ret()))
 
+    def get_uvar(self):
+        """Get unconditional variance.
+
+        Returns
+        -------
+        float
+            Unconditional variance
+
+        """
+        return self.scale*self.delta/(1-self.rho)
+
     def __str__(self):
         """This is what is shown when you print() the instance.
 
