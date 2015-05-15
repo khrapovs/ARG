@@ -369,8 +369,8 @@ def plot_outofthemoney():
     rho = .9
     delta = 1.1
     phi = -.5
-    price_vol = -10
-    price_ret = .5
+    price_vol = -1000
+    price_ret = .6
 
     param = ARGparams(mean=current_vol, rho=rho, delta=delta,
                       phi=phi, price_ret=price_ret, price_vol=price_vol)
@@ -388,8 +388,6 @@ def plot_outofthemoney():
     axes[0].legend()
     axes[1].legend()
     plt.show()
-
-
 
 
 if __name__ == '__main__':

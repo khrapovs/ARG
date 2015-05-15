@@ -380,43 +380,7 @@ class ARG(object):
         return self.psi(param) * uarg - .5 * uarg**2 * (1 - param.phi**2)
 
     def beta(self, uarg, param):
-        """Function beta().
-
-        Parameters
-        ----------
-        uarg : array
-            Grid
-        param : ARGparams instance
-            Model parameters
-
-        Returns
-        -------
-        array
-            Same dimension as uarg
-
-        """
-        return uarg * self.afun(- self.center(param), param)
-
-    def gamma(self, uarg, param):
-        """Function gamma().
-
-        Parameters
-        ----------
-        uarg : array
-            Grid
-        param : ARGparams instance
-            Model parameters
-
-        Returns
-        -------
-        array
-            Same dimension as uarg
-
-        """
-        return uarg * self.bfun(- self.center(param), param)
-
-    def beta_q(self, uarg, param):
-        """Function beta(), risk-neutral version.
+        """Function beta(). Same for risk-neutral.
 
         Parameters
         ----------
@@ -433,8 +397,8 @@ class ARG(object):
         """
         return uarg * self.afun_q(- self.center(param), param)
 
-    def gamma_q(self, uarg, param):
-        """Function gamma(), risk-neutral version.
+    def gamma(self, uarg, param):
+        """Function gamma(). Same for risk-neutral.
 
         Parameters
         ----------
@@ -997,7 +961,10 @@ class ARG(object):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            hess_mat = nd.Hessian(likelihood)(results.x)
+            try:
+                hess_mat = nd.Hessian(likelihood)(results.x)
+            except ValueError:
+                hess_mat = nd.Jacobian(nd.Gradient(likelihood))(results.x)
 
         results.std_theta = np.diag(np.linalg.inv(hess_mat) \
             / len(self.vol))**.5
@@ -1021,7 +988,7 @@ class ARG(object):
         Parameters
         ----------
         theta : array_like
-            Model parameters. [scale, rho, delta]
+            Model parameters. [mean, rho, delta]
 
         Returns
         -------
@@ -1163,7 +1130,7 @@ class ARG(object):
         theta_ret : (2, ) array
             Vector of model parameters. [phi, price_ret]
         theta_vol : (3, ) array
-            Vector of model parameters. [scale, rho, delta]
+            Vector of model parameters. [mean, rho, delta]
         uarg : (nu, ) array
             Grid to evaluate a and b functions
         zlag : int
@@ -1220,7 +1187,7 @@ class ARG(object):
         theta_ret : (2, ) array
             Vector of model parameters. [phi, price_ret]
         theta_vol : (3, ) array
-            Vector of model parameters. [scale, rho, delta]
+            Vector of model parameters. [mean, rho, delta]
         uarg : (nu, ) array
             Grid to evaluate a and b functions
         zlag : int
@@ -1248,7 +1215,7 @@ class ARG(object):
         theta_ret : (2, ) array
             Vector of model parameters. [phi, price_ret]
         theta_vol : (3, ) array
-            Vector of model parameters. [scale, rho, delta]
+            Vector of model parameters. [mean, rho, delta]
         uarg : (nu, ) array
             Grid to evaluate a and b functions
         zlag : int

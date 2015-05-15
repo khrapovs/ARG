@@ -177,6 +177,6 @@ class ARGparams(object):
         """
         params_vol = (self.mean, self.rho, self.delta)
         params_ret = (self.phi, self.price_ret)
-        string = "scale = %.4f, rho = %.4f, delta = %.4f" % params_vol
+        string = "mean = %.4f, rho = %.4f, delta = %.4f" % params_vol
         string += "\nphi = %.4f, price_ret = %.4f" % params_ret
         return string
