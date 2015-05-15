@@ -83,14 +83,10 @@ class ARGTestCase(ut.TestCase):
             self.assertIsInstance(argmodel.alpha(uarg, param), np.ndarray)
             self.assertIsInstance(argmodel.beta(uarg, param), np.ndarray)
             self.assertIsInstance(argmodel.gamma(uarg, param), np.ndarray)
-            self.assertIsInstance(argmodel.beta_q(uarg, param), np.ndarray)
-            self.assertIsInstance(argmodel.gamma_q(uarg, param), np.ndarray)
 
             self.assertEqual(uarg.shape, argmodel.alpha(uarg, param).shape)
             self.assertEqual(uarg.shape, argmodel.beta(uarg, param).shape)
             self.assertEqual(uarg.shape, argmodel.gamma(uarg, param).shape)
-            self.assertEqual(uarg.shape, argmodel.beta_q(uarg, param).shape)
-            self.assertEqual(uarg.shape, argmodel.gamma_q(uarg, param).shape)
 
     def test_joint_functions(self):
         """Test functions lfun, gfun of ARG model."""
