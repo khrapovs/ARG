@@ -413,6 +413,6 @@ if __name__ == '__main__':
 
 #    plot_cf()
 
-#    plot_smiles()
+    plot_smiles()
 
-    plot_outofthemoney()
+#    plot_outofthemoney()
