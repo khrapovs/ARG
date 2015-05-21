@@ -957,7 +957,6 @@ class ARG(object):
 
         results = minimize(likelihood, theta_start, method='L-BFGS-B',
                            options=options)
-#        x0 = brute(likelihood, list(zip(theta_start*.9, theta_start*1.1)))
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -1026,11 +1025,10 @@ class ARG(object):
         param = ARGparams()
         try:
             param.update(theta_ret=theta_ret, theta_vol=theta_vol)
+            r_mean = self.ret_cmean(param)
+            r_var = self.ret_cvar(param)
         except ValueError:
             return 1e10
-
-        r_mean = self.ret_cmean(param)
-        r_var = self.ret_cvar(param)
 
         return - scs.norm.logpdf(self.ret[1:], r_mean, np.sqrt(r_var)).mean()
 
