@@ -733,7 +733,7 @@ class ARG(object):
             Conditional mean
 
         """
-        return param.rho * self.vol[1:] + param.delta * param.get_scale()
+        return param.rho * self.vol[:-1] + param.delta * param.get_scale()
 
     def vol_cvar(self, param):
         """Conditional variance of volatility.
@@ -749,7 +749,7 @@ class ARG(object):
             Conditional variance
 
         """
-        return (2 * param.rho * self.vol[1:]
+        return (2 * param.rho * self.vol[:-1]
             + param.delta * param.get_scale()) * param.get_scale()
 
     def vol_kfun(self, param):
@@ -916,7 +916,7 @@ class ARG(object):
         sns.distplot(vol, rug=True, hist=False)
         plt.show()
 
-    def estimate_mle(self, param_start=None, model=None):
+    def estimate_mle(self, param_start=None, model=None, bounds=None):
         """Estimate model parameters via Maximum Likelihood.
 
         Parameters
@@ -928,6 +928,8 @@ class ARG(object):
                 - 'vol'
                 - 'ret'
                 - 'joint'
+        bounds : list of tuples
+            Bounds on parameters, i.e. [(min, max)]
 
         Returns
         -------
@@ -956,7 +958,7 @@ class ARG(object):
             raise ValueError('Model type not supported')
 
         results = minimize(likelihood, theta_start, method='L-BFGS-B',
-                           options=options)
+                           options=options, bounds=bounds)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -1120,7 +1122,8 @@ class ARG(object):
 
         return moment, dmoment
 
-    def moment_ret(self, theta_ret, theta_vol=None, uarg=None, zlag=1):
+    def moment_ret(self, theta_ret, theta_vol=None, uarg=None,
+                   zlag=1, **kwargs):
         """Moment conditions (returns) for spectral GMM estimator.
 
         Parameters
@@ -1177,20 +1180,14 @@ class ARG(object):
 
         return moment
 
-    def momcond_ret(self, theta_ret, theta_vol=None, uarg=None, zlag=1):
+    def momcond_ret(self, theta_ret, **kwargs):
         """Moment conditions (returns) for spectral GMM estimator.
 
         Parameters
         ----------
         theta_ret : (2, ) array
             Vector of model parameters. [phi, price_ret]
-        theta_vol : (3, ) array
-            Vector of model parameters. [mean, rho, delta]
-        uarg : (nu, ) array
-            Grid to evaluate a and b functions
-        zlag : int
-            Number of lags to use for the instrument
-
+        
         Returns
         -------
         moment : (nobs, nmoms) array
@@ -1199,49 +1196,36 @@ class ARG(object):
             Gradient of momcond restrictions. Mean over observations
 
         """
-        mom = self.moment_ret(theta_ret, theta_vol=theta_vol,
-                              uarg=uarg, zlag=zlag)
-        dmom = self.dmoment_ret(theta_ret, theta_vol=theta_vol,
-                                uarg=uarg, zlag=zlag)
+        mom = self.moment_ret(theta_ret, **kwargs)
+        dmom = self.dmoment_ret(theta_ret, **kwargs)
         return mom, dmom
 
-    def dmoment_ret(self, theta_ret, theta_vol=None, uarg=None, zlag=1):
+    def dmoment_ret(self, theta_ret, **kwargs):
         """Derivative of moments (returns) for spectral GMM estimator.
 
         Parameters
         ----------
         theta_ret : (2, ) array
             Vector of model parameters. [phi, price_ret]
-        theta_vol : (3, ) array
-            Vector of model parameters. [mean, rho, delta]
-        uarg : (nu, ) array
-            Grid to evaluate a and b functions
-        zlag : int
-            Number of lags to use for the instrument
-
+        
         Returns
         -------
         (nmoms, nparams) array
             Gradient of moment restrictions. Mean over observations
 
         """
-        mom = lambda theta: self.moment_ret(theta, theta_vol=theta_vol,
-                                            uarg=uarg, zlag=zlag).mean(0)
+        mom = lambda theta: self.moment_ret(theta, **kwargs).mean(0)
         with np.errstate(divide='ignore'):
             return nd.Jacobian(mom)(theta_ret)
 
-    def moment_joint(self, theta, uarg=None, zlag=1):
+    def moment_joint(self, theta, **kwargs):
         """Moment conditions (joint) for spectral GMM estimator.
 
         Parameters
         ----------
         theta : (5, ) array
             Vector of model parameters. [phi, price_ret]
-        uarg : (nu, ) array
-            Grid to evaluate a and b functions
-        zlag : int
-            Number of lags to use for the instrument
-
+        
         Returns
         -------
         moment : (nobs, nmoms) array
@@ -1249,46 +1233,36 @@ class ARG(object):
 
         """
         theta_vol, theta_ret = theta[:3], theta[3:]
-        mom_vol = self.momcond_vol(theta_vol, uarg=uarg, zlag=zlag)[0]
-        mom_ret = self.moment_ret(theta_ret, theta_vol=theta_vol,
-                                  uarg=uarg, zlag=zlag)
+        mom_vol = self.momcond_vol(theta_vol, **kwargs)[0]
+        mom_ret = self.moment_ret(theta_ret, **kwargs)
         return np.hstack([mom_vol, mom_ret])
 
-    def dmoment_joint(self, theta, uarg=None, zlag=1):
+    def dmoment_joint(self, theta, **kwargs):
         """Derivative of moment conditions (joint) for spectral GMM estimator.
 
         Parameters
         ----------
         theta : (5, ) array
             Vector of model parameters. [phi, price_ret]
-        uarg : (nu, ) array
-            Grid to evaluate a and b functions
-        zlag : int
-            Number of lags to use for the instrument
-
+        
         Returns
         -------
         (nmoms, nparams) array
             Gradient of moment restrictions. Mean over observations
 
         """
-        mom = lambda theta: self.moment_joint(theta, uarg=uarg,
-                                              zlag=zlag).mean(0)
+        mom = lambda theta: self.moment_joint(theta, **kwargs).mean(0)
         with np.errstate(divide='ignore'):
             return nd.Jacobian(mom)(theta)
 
-    def momcond_joint(self, theta, uarg=None, zlag=1):
+    def momcond_joint(self, theta, **kwargs):
         """Moment conditions (joint) for spectral GMM estimator.
 
         Parameters
         ----------
         theta : (5, ) array
             Vector of model parameters. [phi, price_ret]
-        uarg : (nu, ) array
-            Grid to evaluate a and b functions
-        zlag : int
-            Number of lags to use for the instrument
-
+        
         Returns
         -------
         moment : (nobs, nmoms) array
@@ -1297,8 +1271,8 @@ class ARG(object):
             Gradient of momcond restrictions. Mean over observations
 
         """
-        mom = self.moment_joint(theta, uarg=uarg, zlag=zlag)
-        dmom = self.dmoment_joint(theta, uarg=uarg, zlag=zlag)
+        mom = self.moment_joint(theta, **kwargs)
+        dmom = self.dmoment_joint(theta, **kwargs)
         return mom, dmom
 
     def estimate_gmm(self, param_start=None, model='vol', **kwargs):
