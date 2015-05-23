@@ -171,6 +171,17 @@ class ARGparams(object):
         """
         return self.rho / self.scale
 
+    def get_risk_prices(self):
+        """Get risk prices, theta_1 (vol) and theta_2 (ret).
+
+        Returns
+        -------
+        array
+            Risk prices
+
+        """
+        return np.array([self.price_vol, self.price_ret])
+
     def __str__(self):
         """This is what is shown when you print() the instance.
 

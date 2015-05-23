@@ -809,6 +809,42 @@ class ARG(object):
         C2 = float(-self.gamma(u, param).diff(u, 2).subs(u, 0))
         return A2 * self.vol[1:] + B2 * self.vol[:-1] + C2
 
+    def erp(self, param):
+        """Conditional equity risk premium.
+
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        (nobs, nsim) array
+            ERP
+
+        """
+        vrp = self.vol_cmean(param) - self.vol_cmean(self.convert_to_q(param))
+        return (param.price_ret * (1-param.phi**2) * self.vol_cmean(param) +
+            (self.center(param) - (1-param.phi**2)/2) * vrp)
+
+    def vrp(self, param):
+        """Conditional volatility risk premium.
+
+        Parameters
+        ----------
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        (nobs, nsim) array
+            VRP
+
+        """
+        volp = self.vol_cmean(param)**.5
+        volq = self.vol_cmean(self.convert_to_q(param))**.5
+        return volp - volq
+
     def overdispersion(self, param):
         """Conditional overdispersion.
 
@@ -971,7 +1007,7 @@ class ARG(object):
             / len(self.vol))**.5
         results.tstat = results.x / results.std_theta
 
-        param_final = ARGparams()
+        param_final = param_start
         if model == 'vol':
             param_final.update(theta_vol=results.x)
         elif model == 'ret':
@@ -1187,7 +1223,7 @@ class ARG(object):
         ----------
         theta_ret : (2, ) array
             Vector of model parameters. [phi, price_ret]
-        
+
         Returns
         -------
         moment : (nobs, nmoms) array
@@ -1207,7 +1243,7 @@ class ARG(object):
         ----------
         theta_ret : (2, ) array
             Vector of model parameters. [phi, price_ret]
-        
+
         Returns
         -------
         (nmoms, nparams) array
@@ -1225,7 +1261,7 @@ class ARG(object):
         ----------
         theta : (5, ) array
             Vector of model parameters. [phi, price_ret]
-        
+
         Returns
         -------
         moment : (nobs, nmoms) array
@@ -1244,7 +1280,7 @@ class ARG(object):
         ----------
         theta : (5, ) array
             Vector of model parameters. [phi, price_ret]
-        
+
         Returns
         -------
         (nmoms, nparams) array
@@ -1262,7 +1298,7 @@ class ARG(object):
         ----------
         theta : (5, ) array
             Vector of model parameters. [phi, price_ret]
-        
+
         Returns
         -------
         moment : (nobs, nmoms) array
@@ -1314,8 +1350,7 @@ class ARG(object):
         else:
             raise ValueError('Model type not supported')
 
-        param_final = ARGparams()
-
+        param_final = param_start
         if model == 'vol':
             param_final.update(theta_vol=results.theta)
         elif model == 'ret':
