@@ -139,18 +139,21 @@ class ARG(object):
             Risk-neutral parameters
 
         """
+        paramq = ARGparams()
+        paramq.update(theta=param.get_theta(), price_vol=param.price_vol)
         factor = 1/(1 + param.get_scale() \
             * (param.price_vol + self.alpha(param.price_ret, param)))
-        if factor <= 0 or param.get_theta_vol().min() <= 0:
+        if factor <= 0 or factor > 1/param.rho**.5:
+            print('Lower bound for theta1 is %.2f'
+                % self.vol_price_lower_bound(param))
             raise ValueError('Invalid parameters in Q conversion!')
         delta = param.delta
         scale = param.get_scale() * factor
         beta = param.get_beta() * factor
         rho = scale * beta
         mean = scale * delta / (1 - rho)
-        param = ARGparams()
-        param.update(theta_vol=[mean, rho, delta])
-        return param
+        paramq.update(theta_vol=[mean, rho, delta])
+        return paramq
 
     def load_data(self, vol=None, ret=None):
         """Load data into the model object.
@@ -783,10 +786,9 @@ class ARG(object):
             Conditional mean
 
         """
-        u = sp.Symbol('u')
-        A1 = float(self.alpha(u, param).diff(u, 1).subs(u, 0))
-        B1 = float(self.beta(u, param).diff(u, 1).subs(u, 0))
-        C1 = float(self.gamma(u, param).diff(u, 1).subs(u, 0))
+        A1 = self.psi(param)
+        B1 = self.afun_q(- self.center(param), param)
+        C1 = self.bfun_q(- self.center(param), param)
         return A1 * self.vol[1:] + B1 * self.vol[:-1] + C1
 
     def ret_cvar(self, param):
@@ -803,11 +805,12 @@ class ARG(object):
             Conditional mean
 
         """
-        u = sp.Symbol('u')
-        A2 = float(-self.alpha(u, param).diff(u, 2).subs(u, 0))
-        B2 = float(-self.beta(u, param).diff(u, 2).subs(u, 0))
-        C2 = float(-self.gamma(u, param).diff(u, 2).subs(u, 0))
-        return A2 * self.vol[1:] + B2 * self.vol[:-1] + C2
+#        u = sp.Symbol('u')
+#        A2 = float(-self.alpha(u, param).diff(u, 2).subs(u, 0))
+#        B2 = float(-self.beta(u, param).diff(u, 2).subs(u, 0))
+#        C2 = float(-self.gamma(u, param).diff(u, 2).subs(u, 0))
+#        return A2 * self.vol[1:] + B2 * self.vol[:-1] + C2
+        return (1 - param.phi**2) * self.vol[1:]
 
     def erp(self, param):
         """Conditional equity risk premium.
@@ -985,10 +988,12 @@ class ARG(object):
             theta_start = param_start.get_theta_vol()
         elif model == 'ret':
             likelihood = lambda x: \
-                self.likelihood_ret(x, param_start.get_theta_vol())
+                self.likelihood_ret(x, param_start.get_theta_vol(),
+                                    param_start.price_vol)
             theta_start = param_start.get_theta_ret()
         elif model == 'joint':
-            likelihood = self.likelihood_joint
+            likelihood = lambda x: \
+                self.likelihood_joint(x, param_start.price_vol)
             theta_start = param_start.get_theta()
         else:
             raise ValueError('Model type not supported')
@@ -1044,7 +1049,7 @@ class ARG(object):
         logf = scs.ncx2.logpdf(self.vol[1:], degf, nonc, scale=scale)
         return -logf[~np.isnan(logf)].mean()
 
-    def likelihood_ret(self, theta_ret, theta_vol):
+    def likelihood_ret(self, theta_ret, theta_vol, price_vol):
         """Log-likelihood for return model.
 
         Parameters
@@ -1053,6 +1058,8 @@ class ARG(object):
             Model parameters. [phi, price_ret]
         theta_vol : array_like
             Volatility model parameters. [phi, price_ret]
+        price_vol : float
+            Price of volatility risk
 
         Returns
         -------
@@ -1062,7 +1069,10 @@ class ARG(object):
         """
         param = ARGparams()
         try:
-            param.update(theta_ret=theta_ret, theta_vol=theta_vol)
+            param.update(theta_ret=theta_ret, theta_vol=theta_vol,
+                         price_vol=price_vol)
+            if price_vol < self.vol_price_lower_bound(param):
+                raise ValueError
             r_mean = self.ret_cmean(param)
             r_var = self.ret_cvar(param)
         except ValueError:
@@ -1070,13 +1080,15 @@ class ARG(object):
 
         return - scs.norm.logpdf(self.ret[1:], r_mean, np.sqrt(r_var)).mean()
 
-    def likelihood_joint(self, theta):
+    def likelihood_joint(self, theta, price_vol):
         """Log-likelihood for joint model.
 
         Parameters
         ----------
         theta : array_like
-            Model parameters.
+            Model parameters
+        price_vol : float
+            Price of volatility risk
 
         Returns
         -------
@@ -1086,7 +1098,22 @@ class ARG(object):
         """
         theta_vol, theta_ret = theta[:3], theta[3:]
         return self.likelihood_vol(theta_vol) \
-            + self.likelihood_ret(theta_ret, theta_vol)
+            + self.likelihood_ret(theta_ret, theta_vol, price_vol)
+
+    def vol_price_lower_bound(self, param):
+        """Get lower bound for volatility risk price.
+
+        Parameters
+        ----------
+        param : ARGparams instance
+
+        Returns
+        -------
+        float
+
+        """
+        return (param.rho**.5 - 1) / param.get_scale() \
+            -self.alpha(param.price_ret, param)
 
     def momcond_vol(self, theta_vol, uarg=None, zlag=1):
         """Moment conditions (volatility) for spectral GMM estimator.

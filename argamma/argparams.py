@@ -65,7 +65,8 @@ class ARGparams(object):
         # Equity risk price
         self.price_ret = price_ret
 
-    def update(self, theta_vol=None, theta_ret=None, theta=None):
+    def update(self, theta_vol=None, theta_ret=None,
+               theta=None, price_vol=None):
         """Update model parameters from vectors.
 
         Parameters
@@ -102,6 +103,10 @@ class ARGparams(object):
             else:
                 [self.mean, self.rho, self.delta, self.phi, self.price_ret] \
                     = theta
+
+        if price_vol is not None:
+            self.price_vol = price_vol
+
         # Update scale parameter
         self.scale = self.get_scale()
 

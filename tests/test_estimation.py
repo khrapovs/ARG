@@ -26,14 +26,18 @@ class ARGestimationTestCase(ut.TestCase):
         ret = np.array([4, 5, 6])
         param = ARGparams()
         param.update(theta_vol=theta_vol, theta_ret=theta_ret)
+        price_vol = -1
 
         argmodel = ARG()
         argmodel.load_data(vol=vol, ret=ret)
 
         self.assertIsInstance(argmodel.likelihood_vol(theta_vol), float)
-        self.assertIsInstance(argmodel.likelihood_ret(theta_ret, theta_vol),
-                              float)
-        self.assertIsInstance(argmodel.likelihood_joint(theta), float)
+
+        like = argmodel.likelihood_ret(theta_ret, theta_vol, price_vol)
+        self.assertIsInstance(like, float)
+
+        like = argmodel.likelihood_joint(theta, price_vol)
+        self.assertIsInstance(like, float)
 
     def test_estimate_mle(self):
         """Test MLE estimation."""
