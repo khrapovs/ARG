@@ -492,6 +492,35 @@ class ARG(object):
             ups[:, cond] += gfun
             psi[:, cond] = lfun
 
+    def store_ch_fun_elements(self, varg, param):
+        """Functions psi(v, n) and ups(v, n) in risk-neutral
+        characteristic function of returns for n periods.
+
+        Parameters
+        ----------
+        varg : array
+            Grid for returns
+        param : ARGparams instance
+            Model parameters
+
+        Returns
+        -------
+        psi : array
+        ups : array
+
+        """
+        periods = np.max(days_from_maturity(self.maturity))
+        psi, ups = self.lgfun_q(0., varg, param)
+        psidict, upsdict = {1: psi}, {1: ups}
+        while True:
+            if periods == 1:
+                return psidict, upsdict
+            periods -= 1
+            lfun, gfun = self.lgfun_q(psi, varg, param)
+            ups += gfun
+            psi = lfun
+            psidict[periods], upsdict[periods] = psi, ups
+
     def char_fun_ret_q(self, varg, param):
         r"""Conditional risk-neutral Characteristic function (return).
 

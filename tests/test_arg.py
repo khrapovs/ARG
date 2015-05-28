@@ -8,7 +8,7 @@ from __future__ import print_function, division
 import unittest as ut
 import numpy as np
 
-from argamma import ARG, ARGparams
+from argamma import ARG, ARGparams, days_in_year
 
 
 class ARGTestCase(ut.TestCase):
@@ -113,7 +113,8 @@ class ARGTestCase(ut.TestCase):
         """Test functions psin, upsn of ARG model."""
         param = ARGparams()
         varg = np.atleast_2d(1.)
-        maturity = 5/365
+        days = 5
+        maturity = days / days_in_year()
         argmodel = ARG()
         argmodel.maturity = maturity
 
@@ -127,12 +128,19 @@ class ARGTestCase(ut.TestCase):
         self.assertEqual(psi.shape, varg.shape)
         self.assertEqual(ups.shape, varg.shape)
 
+        psi, ups = argmodel.store_ch_fun_elements(varg, param)
+        self.assertIsInstance(psi, dict)
+        self.assertIsInstance(ups, dict)
+        for day in range(1, days):
+            self.assertEqual(psi[day].shape, varg.shape)
+            self.assertEqual(ups[day].shape, varg.shape)
+
     def test_char_fun_ret_q(self):
         """Test risk-neutral return charcteristic function."""
         param = ARGparams()
         nobs = 5
         vol = np.arange(nobs)
-        maturity = np.ones(nobs) * 5/365
+        maturity = np.ones(nobs) * 5/days_in_year()
         riskfree = 0.
         argmodel = ARG()
         argmodel.riskfree = riskfree
@@ -150,7 +158,7 @@ class ARGTestCase(ut.TestCase):
         param = ARGparams()
         vol = 1.
         argmodel = ARG()
-        argmodel.maturity = 5/365
+        argmodel.maturity = 5/days_in_year()
         argmodel.riskfree = 0.
         argmodel.load_data(vol=vol)
         varg = np.atleast_2d(1.)
@@ -163,7 +171,7 @@ class ARGTestCase(ut.TestCase):
         """Test risk-neutral return charcteristic function."""
         param = ARGparams()
         vol = 1.
-        maturity = 5/365
+        maturity = 5/days_in_year()
         riskfree = 0.
         argmodel = ARG(param=param)
         argmodel.riskfree = riskfree
@@ -189,7 +197,7 @@ class ARGTestCase(ut.TestCase):
         """Test cos_restriction method."""
         param = ARGparams()
         vol = 1.
-        maturity = 5/365
+        maturity = 5/days_in_year()
         riskfree = 0.
         argmodel = ARG(param=param)
         argmodel.riskfree = riskfree
@@ -292,14 +300,14 @@ class ARGTestCase(ut.TestCase):
     def test_option_premium(self):
         """Test option pricing for the model."""
         price, strike = 100, 90
-        riskfree, maturity = 0, 5/365
+        riskfree, maturity = 0, 5/days_in_year()
         moneyness = np.log(strike/price) - riskfree * maturity
-        vol = .2**2/365
+        vol = .2**2/days_in_year()
         call = True
 
         rho = .55
         delta = .75
-        mean = .2**2/365
+        mean = .2**2/days_in_year()
         phi = -.0
         price_vol = -16.0
         price_ret = 20.95
@@ -316,7 +324,7 @@ class ARGTestCase(ut.TestCase):
         nobs = 10
         strike = np.exp(np.linspace(-.1, .1, nobs))
         moneyness = np.log(strike/price) - riskfree * maturity
-        maturity = 5/365 * np.ones(10)
+        maturity = 5/days_in_year() * np.ones(10)
 
         premium = argmodel.option_premium(vol=vol, moneyness=moneyness,
                                           maturity=maturity, riskfree=riskfree,
