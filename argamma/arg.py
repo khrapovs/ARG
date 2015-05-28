@@ -35,7 +35,6 @@ import warnings
 
 import numpy as np
 import numexpr as ne
-import sympy as sp
 import matplotlib.pylab as plt
 import seaborn as sns
 import scipy.stats as scs

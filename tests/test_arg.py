@@ -7,10 +7,8 @@ from __future__ import print_function, division
 
 import unittest as ut
 import numpy as np
-import scipy.optimize as sco
 
 from argamma import ARG, ARGparams
-from argamma.mygmm import Results
 
 
 class ARGTestCase(ut.TestCase):
