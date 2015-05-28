@@ -114,7 +114,8 @@ class ARGTestCase(ut.TestCase):
         param = ARGparams()
         varg = np.atleast_2d(1.)
         maturity = 5/365
-        argmodel = ARG(maturity=maturity)
+        argmodel = ARG()
+        argmodel.maturity = maturity
 
         psi, ups = argmodel.ch_fun_elements(varg, param)
         self.assertEqual(psi.shape, (1, 1))
@@ -133,7 +134,9 @@ class ARGTestCase(ut.TestCase):
         vol = np.arange(nobs)
         maturity = np.ones(nobs) * 5/365
         riskfree = 0.
-        argmodel = ARG(maturity=maturity, riskfree=riskfree)
+        argmodel = ARG()
+        argmodel.riskfree = riskfree
+        argmodel.maturity = maturity
         argmodel.load_data(vol=vol)
         varg = np.atleast_2d(1.)
 
@@ -146,7 +149,9 @@ class ARGTestCase(ut.TestCase):
 
         param = ARGparams()
         vol = 1.
-        argmodel = ARG(maturity=5/365, riskfree=0.)
+        argmodel = ARG()
+        argmodel.maturity = 5/365
+        argmodel.riskfree = 0.
         argmodel.load_data(vol=vol)
         varg = np.atleast_2d(1.)
 
@@ -160,7 +165,9 @@ class ARGTestCase(ut.TestCase):
         vol = 1.
         maturity = 5/365
         riskfree = 0.
-        argmodel = ARG(param=param, maturity=maturity, riskfree=riskfree)
+        argmodel = ARG(param=param)
+        argmodel.riskfree = riskfree
+        argmodel.maturity = maturity
         argmodel.load_data(vol=vol)
         narg = 5
         varg = np.arange(narg)[:, np.newaxis]
@@ -172,7 +179,9 @@ class ARGTestCase(ut.TestCase):
         nobs = 10
         vol = np.ones(nobs)
         maturity = maturity * np.ones(nobs)
-        argmodel = ARG(param=param, maturity=maturity, riskfree=riskfree)
+        argmodel = ARG(param=param)
+        argmodel.riskfree = riskfree
+        argmodel.maturity = maturity
         argmodel.load_data(vol=vol)
         self.assertEqual(argmodel.charfun(varg).shape, (narg, nobs))
 
@@ -182,7 +191,10 @@ class ARGTestCase(ut.TestCase):
         vol = 1.
         maturity = 5/365
         riskfree = 0.
-        argmodel = ARG(param=param, maturity=maturity, riskfree=riskfree)
+        argmodel = ARG(param=param)
+        argmodel.riskfree = riskfree
+        argmodel.maturity = maturity
+
         argmodel.load_data(vol=vol)
         alim, blim = argmodel.cos_restriction()
 
@@ -191,7 +203,9 @@ class ARGTestCase(ut.TestCase):
 
         nobs = 10
         vol = np.ones(nobs)
-        argmodel = ARG(param=param, maturity=maturity, riskfree=riskfree)
+        argmodel = ARG(param=param)
+        argmodel.riskfree = riskfree
+        argmodel.maturity = maturity
         argmodel.load_data(vol=vol)
         alim, blim = argmodel.cos_restriction()
 

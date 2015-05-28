@@ -104,25 +104,20 @@ class ARG(object):
 
     """
 
-    def __init__(self, param=None, maturity=None, riskfree=None):
+    def __init__(self, param=None):
         """Initialize class instance.
 
         Parameters
         ----------
         param : ARGparams instance, optional
             Parameters of the model
-        maturity : float, optional
-            Maturity of the option or simply time horizon.
-            Fraction of a year, i.e. 30/365
-        riskfree : float, optional
-            Risk-free annualized rate of return
 
         """
         self.vol = None
         self.ret = None
         self.param = param
-        self.maturity = maturity
-        self.riskfree = riskfree
+        self.maturity = None
+        self.riskfree = None
 
     def convert_to_q(self, param):
         """Convert physical (P) parameters to risk-neutral (Q) parameters.
@@ -483,7 +478,6 @@ class ARG(object):
         ups : array
 
         """
-        #        periods = int(self.maturity * 365)
         periods = np.atleast_1d(self.maturity * 365).astype(int)
         ones = np.ones_like(periods)
         lfun, gfun = self.lgfun_q(0., varg, param)
@@ -1451,10 +1445,11 @@ class ARG(object):
             Current volatility
         moneyness : array_like
             Log-forward moneyness, np.log(strike/price) - riskfree * maturity
-        maturity : float
-            Fraction of a year
-        riskfree : array_like
-            Risk-free rate, annualized
+        maturity : float, optional
+            Maturity of the option or simply time horizon.
+            Fraction of a year, i.e. 30/365
+        riskfree : float, optional
+            Risk-free annualized rate of return
         call : bool array_like
             Call/Put flag
         data : pandas DataFrame, record array, or dictionary of arrays
