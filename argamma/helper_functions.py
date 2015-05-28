@@ -37,7 +37,7 @@ def periods_from_maturity(maturity):
         Number of days in a year
 
     """
-    return np.atleast_1d(maturity * days_in_year()).astype(int)
+    return np.around(maturity * days_in_year(), decimals=1)
 
 
 if __name__ == '__main__':

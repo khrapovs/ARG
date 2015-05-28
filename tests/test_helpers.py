@@ -29,6 +29,12 @@ class HelpersTestCase(ut.TestCase):
 
         np.testing.assert_array_equal(np.array(days), periods)
 
+        days = np.arange(10, 20, 2)
+        maturity = days / days_in_year()
+        periods = periods_from_maturity(maturity)
+
+        np.testing.assert_array_equal(np.array(days), periods)
+
 
 if __name__ == '__main__':
 
