@@ -1384,19 +1384,6 @@ class ARG(object):
 
         return param_final, results
 
-    def get_max_maturity(self):
-        """Get minimum and maximum maturity.
-
-        Returns
-        -------
-        float
-            Minimum maturity
-        float
-            Maximum maturity
-
-        """
-        return np.min(self.maturity), np.max(self.maturity)
-
     def cos_restriction(self):
         """Restrictions used in COS method of option pricing.
 
