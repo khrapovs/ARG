@@ -44,6 +44,7 @@ import numdifftools as nd
 from statsmodels.tsa.tsatools import lagmat
 
 from .argparams import ARGparams
+from .helper_functions import days_in_year, periods_from_maturity
 from argamma.mygmm import GMM
 from argamma.fangoosterlee import cosmethod
 
@@ -478,7 +479,7 @@ class ARG(object):
         ups : array
 
         """
-        periods = np.atleast_1d(self.maturity * 365).astype(int)
+        periods = np.atleast_1d(self.maturity * days_in_year()).astype(int)
         ones = np.ones_like(periods)
         lfun, gfun = self.lgfun_q(0., varg, param)
         varg, psi, ups = varg * ones, lfun * ones, gfun * ones
@@ -1383,6 +1384,19 @@ class ARG(object):
 
         return param_final, results
 
+    def get_max_maturity(self):
+        """Get minimum and maximum maturity.
+
+        Returns
+        -------
+        float
+            Minimum maturity
+        float
+            Maximum maturity
+
+        """
+        return np.min(self.maturity), np.max(self.maturity)
+
     def cos_restriction(self):
         """Restrictions used in COS method of option pricing.
 
@@ -1405,7 +1419,7 @@ class ARG(object):
         """
         L = 100.
         c1 = self.riskfree * self.maturity
-        c2 = self.vol * self.maturity * 365
+        c2 = self.vol * self.maturity * days_in_year()
 
         alim = c1 - L * c2**.5
         blim = c1 + L * c2**.5
