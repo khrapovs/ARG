@@ -8,7 +8,7 @@ from __future__ import print_function, division
 
 import numpy as np
 
-__all__ = ['days_in_year', 'periods_from_maturity', 'get_minmax_periods']
+__all__ = ['days_in_year', 'days_from_maturity']
 
 
 def days_in_year():
@@ -23,7 +23,7 @@ def days_in_year():
     return 365
 
 
-def periods_from_maturity(maturity):
+def days_from_maturity(maturity):
     """Return number of days in a year.
 
     Parameters
@@ -38,20 +38,6 @@ def periods_from_maturity(maturity):
 
     """
     return np.atleast_1d(np.around(maturity * days_in_year(), decimals=1))
-
-
-def get_minmax_periods(periods):
-    """Get minimum and maximum periods.
-
-    Returns
-    -------
-    int
-        Minimum periods
-    int
-        Maximum periods
-
-    """
-    return np.min(periods), np.max(periods)
 
 
 if __name__ == '__main__':

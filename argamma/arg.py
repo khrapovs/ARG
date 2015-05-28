@@ -44,7 +44,7 @@ import numdifftools as nd
 from statsmodels.tsa.tsatools import lagmat
 
 from .argparams import ARGparams
-from .helper_functions import periods_from_maturity
+from .helper_functions import days_from_maturity
 from argamma.mygmm import GMM
 from argamma.fangoosterlee import cosmethod
 
@@ -479,7 +479,7 @@ class ARG(object):
         ups : array
 
         """
-        periods = periods_from_maturity(self.maturity)
+        periods = days_from_maturity(self.maturity)
         ones = np.ones_like(periods)
         lfun, gfun = self.lgfun_q(0., varg, param)
         varg, psi, ups = varg * ones, lfun * ones, gfun * ones
@@ -1405,7 +1405,7 @@ class ARG(object):
 
         """
         L = 100.
-        periods = periods_from_maturity(self.maturity)
+        periods = days_from_maturity(self.maturity)
         c1 = self.riskfree * periods
         c2 = self.vol * periods
 
