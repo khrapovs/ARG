@@ -37,7 +37,7 @@ def periods_from_maturity(maturity):
         Number of days in a year
 
     """
-    return np.around(maturity * days_in_year(), decimals=1)
+    return np.atleast_1d(np.around(maturity * days_in_year(), decimals=1))
 
 
 def get_minmax_periods(periods):

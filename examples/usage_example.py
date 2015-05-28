@@ -361,7 +361,7 @@ def plot_outofthemoney():
     """
     nobs = 200
     moneyness = np.linspace(-.2, .2, nobs)
-    riskfree, maturity = .1, 30/365
+    riskfree, maturity = .1/365, 30/365
     call = np.ones_like(moneyness).astype(bool)
     call[moneyness < 0] = False
     current_vol = .2**2/365

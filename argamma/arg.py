@@ -44,7 +44,7 @@ import numdifftools as nd
 from statsmodels.tsa.tsatools import lagmat
 
 from .argparams import ARGparams
-from .helper_functions import days_in_year, periods_from_maturity
+from .helper_functions import periods_from_maturity
 from argamma.mygmm import GMM
 from argamma.fangoosterlee import cosmethod
 
@@ -72,7 +72,7 @@ class ARG(object):
         Maturity of the option or simply time horizon.
         Fraction of a year, i.e. 30/365
     riskfree
-        Risk-free annualized rate of return
+        Risk-free rate of return per day
 
     Methods
     -------
@@ -479,7 +479,7 @@ class ARG(object):
         ups : array
 
         """
-        periods = np.atleast_1d(self.maturity * days_in_year()).astype(int)
+        periods = periods_from_maturity(self.maturity)
         ones = np.ones_like(periods)
         lfun, gfun = self.lgfun_q(0., varg, param)
         varg, psi, ups = varg * ones, lfun * ones, gfun * ones
@@ -1390,7 +1390,7 @@ class ARG(object):
         Parameters
         ----------
         riskfree : array_like
-            Risk-free rate of returns, annualized
+            Risk-free rate of returns, per day
         maturity : array_like
             Maturity, fraction of the year, i.e. 30/365
 
@@ -1405,8 +1405,9 @@ class ARG(object):
 
         """
         L = 100.
-        c1 = self.riskfree * self.maturity
-        c2 = self.vol * self.maturity * days_in_year()
+        periods = periods_from_maturity(self.maturity)
+        c1 = self.riskfree * periods
+        c2 = self.vol * periods
 
         alim = c1 - L * c2**.5
         blim = c1 + L * c2**.5
@@ -1443,14 +1444,14 @@ class ARG(object):
         Parameters
         ----------
         vol : array_like
-            Current volatility
+            Current variance per day
         moneyness : array_like
             Log-forward moneyness, np.log(strike/price) - riskfree * maturity
         maturity : float, optional
             Maturity of the option or simply time horizon.
             Fraction of a year, i.e. 30/365
         riskfree : float, optional
-            Risk-free annualized rate of return
+            Risk-free rate of return per day
         call : bool array_like
             Call/Put flag
         data : pandas DataFrame, record array, or dictionary of arrays

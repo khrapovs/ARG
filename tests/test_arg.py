@@ -198,8 +198,8 @@ class ARGTestCase(ut.TestCase):
         argmodel.load_data(vol=vol)
         alim, blim = argmodel.cos_restriction()
 
-        self.assertIsInstance(alim, float)
-        self.assertIsInstance(blim, float)
+        self.assertIsInstance(alim[0], float)
+        self.assertIsInstance(blim[0], float)
 
         nobs = 10
         vol = np.ones(nobs)
