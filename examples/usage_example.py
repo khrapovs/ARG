@@ -304,7 +304,7 @@ def plot_smiles(fname=None):
     rho = .9
     delta = 1.1
     phi = -.5
-    price_vol = -.1
+    price_vol = -1
     price_ret = .5
 
     points = 5

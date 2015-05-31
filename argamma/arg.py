@@ -46,7 +46,8 @@ from statsmodels.tsa.tsatools import lagmat
 from .argparams import ARGparams
 from .helper_functions import days_from_maturity
 from argamma.mygmm import GMM
-from argamma.fangoosterlee import cosmethod
+#from argamma.fangoosterlee import cosmethod
+from fangoosterlee import cosmethod
 
 __all__ = ['ARG']
 
@@ -1433,7 +1434,7 @@ class ARG(object):
         This method is used by COS method of option pricing
 
         """
-        L = 100.
+        L = 5
         periods = days_from_maturity(self.maturity)
         c1 = self.riskfree * periods
         c2 = self.vol * periods
@@ -1467,7 +1468,7 @@ class ARG(object):
         return self.char_fun_ret_q(varg, self.param)
 
     def option_premium(self, vol=None, moneyness=None, maturity=None,
-                       riskfree=None, call=None, data=None):
+                       riskfree=None, call=None, data=None, npoints=2**10):
         """Model implied option premium via COS method.
 
         Parameters
@@ -1486,6 +1487,8 @@ class ARG(object):
         data : pandas DataFrame, record array, or dictionary of arrays
             Structured data. Mandatory labels:
             vol, moneyness, maturity, riskfree, call
+        npoints : int
+            Number of points on the grid. The more the better, but slower.
 
         Returns
         -------
@@ -1508,7 +1511,7 @@ class ARG(object):
         self.riskfree = riskfree
         self.vol = vol
 
-        return cosmethod(self, moneyness=moneyness, call=call)
+        return cosmethod(self, moneyness=moneyness, call=call, npoints=2**10)
 
 
 if __name__ == '__main__':
