@@ -46,8 +46,8 @@ from statsmodels.tsa.tsatools import lagmat
 from .argparams import ARGparams
 from .helper_functions import days_from_maturity
 from argamma.mygmm import GMM
-#from argamma.fangoosterlee import cosmethod
-from fangoosterlee import cosmethod
+from argamma.fangoosterlee import cosmethod
+#from fangoosterlee import cosmethod
 
 __all__ = ['ARG']
 
@@ -1511,7 +1511,7 @@ class ARG(object):
         self.riskfree = riskfree
         self.vol = vol
 
-        return cosmethod(self, moneyness=moneyness, call=call, npoints=2**10)
+        return cosmethod(self, moneyness=moneyness, call=call, npoints=npoints)
 
 
 if __name__ == '__main__':
