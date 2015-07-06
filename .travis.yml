@@ -24,10 +24,13 @@ before_install:
 install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib nose seaborn statsmodels sympy numexpr
   - conda install --yes -c https://conda.binstar.org/omnia numdifftools
+  - pip install git+git://github.com/khrapovs/mygmm
+  - pip install git+git://github.com/khrapovs/impvol
+  - pip install git+git://github.com/khrapovs/fangoosterlee
 
 # Run test
 script:
-  - nosetests tests/
+  - nosetests
 
 # Calculate coverage
 after_success:

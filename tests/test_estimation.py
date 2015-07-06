@@ -10,7 +10,7 @@ import numpy as np
 import scipy.optimize as sco
 
 from argamma import ARG, ARGparams
-from argamma.mygmm import Results
+from mygmm import Results
 
 
 class ARGestimationTestCase(ut.TestCase):

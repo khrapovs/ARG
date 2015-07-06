@@ -1,9 +1,0 @@
-[submodule "mygmm"]
-	path = mygmm
-	url = https://github.com/khrapovs/mygmm.git
-[submodule "fangoosterlee"]
-	path = fangoosterlee
-	url = https://github.com/khrapovs/fangoosterlee
-[submodule "impvol"]
-	path = impvol
-	url = https://github.com/khrapovs/impvol

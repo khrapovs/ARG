@@ -45,9 +45,8 @@ from statsmodels.tsa.tsatools import lagmat
 
 from .argparams import ARGparams
 from .helper_functions import days_from_maturity
-from argamma.mygmm import GMM
-from argamma.fangoosterlee import cosmethod
-#from fangoosterlee import cosmethod
+from mygmm import GMM
+from fangoosterlee import cosmethod
 
 __all__ = ['ARG']
 
